@@ -1,0 +1,4673 @@
+<!doctype html>
+<html lang="de">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Chatbot & SEO Dashboard – Scholz-Friese</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#020617">
+  <link rel="icon" type="image/png" href="/logo_SF_transparent.png">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://app.lemonsqueezy.com/js/lemon.js" defer></script>
+
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #0f172a;
+      --bg-soft: #0b1220;
+      --card-bg: #020617;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.16);
+      --border-subtle: rgba(148, 163, 184, 0.3);
+      --text-main: #e5e7eb;
+      --text-muted: #9ca3af;
+      --danger: #f97373;
+
+      --ok: #4ade80;
+      --warn: #fbbf24;
+      --shadow: 0 18px 45px rgba(15, 23, 42, 0.75);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      background: #020617;
+      /* wichtig gegen weißen iOS-„Overscroll“-Bereich */
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: radial-gradient(circle at top left, #1d283a 0, #020617 45%, #020617 100%);
+      background-color: #020617;
+      /* fallback */
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* --- Analytics Header Layout Fix + schöner Toggle --- */
+    .analytics-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* Linker Toggle-Button */
+    .analytics-collapse-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      background: rgba(15, 23, 42, 0.65);
+      color: rgba(229, 231, 235, 0.9);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .analytics-collapse-btn:hover {
+      border-color: rgba(56, 189, 248, 0.65);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12);
+    }
+
+    /* kurzer "Glow" beim Klicken */
+    .analytics-collapse-btn:active {
+      box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.18), 0 10px 22px rgba(15, 23, 42, 0.45);
+      transform: translateY(-1px);
+    }
+
+    .analytics-collapse-btn .chev {
+      display: inline-block;
+      transition: transform .22s ease, filter .22s ease;
+      filter: drop-shadow(0 0 0 rgba(56, 189, 248, 0));
+    }
+
+    /* Rotation abhängig von collapsed state */
+    #analytics-card.is-collapsed .analytics-collapse-btn .chev {
+      transform: rotate(-90deg);
+    }
+
+    #analytics-card:not(.is-collapsed) .analytics-collapse-btn .chev {
+      transform: rotate(0deg);
+      filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.25));
+    }
+
+    /* Headline nimmt Platz, Range rechts/unter */
+    .analytics-headline {
+      flex: 1 1 320px;
+      min-width: 240px;
+    }
+
+    .range-switch {
+      flex: 0 1 auto;
+      justify-content: center;
+      width: 100%;
+    }
+
+    @media (min-width: 900px) {
+      .range-switch {
+        width: auto;
+        margin-left: auto;
+        justify-content: flex-end;
+      }
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* --- PRICING & PLAN BADGES --- */
+    .plan-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-left: 8px;
+    }
+
+    .plan-badge.free {
+      background: rgba(148, 163, 184, 0.15);
+      color: var(--text-muted);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
+    .plan-badge.pro {
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+    }
+
+    .plan-badge.unlimited,
+    .plan-badge.admin {
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.2), rgba(99, 102, 241, 0.2));
+      color: #e5e7eb;
+      border: 1px solid rgba(99, 102, 241, 0.5);
+      box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+    }
+
+    /* Pricing Section (wird bei Free-Usern eingeblendet) */
+    .upgrade-section {
+      margin-top: 16px;
+      padding: 20px;
+      border-radius: 14px;
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.8), rgba(2, 6, 23, 0.9));
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      display: none;
+      /* Standardmäßig versteckt */
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .upgrade-section.visible {
+      display: flex;
+    }
+
+    .upgrade-header {
+      text-align: center;
+    }
+
+    .upgrade-header h3 {
+      margin: 0 0 8px 0;
+      font-size: 18px;
+      color: var(--text-main);
+    }
+
+    .upgrade-header p {
+      margin: 0;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+
+    .pricing-card {
+      background: rgba(2, 6, 23, 0.6);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .pricing-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+      border-color: rgba(56, 189, 248, 0.4);
+    }
+
+    .pricing-card.popular {
+      border-color: var(--accent);
+      background: linear-gradient(to bottom, rgba(56, 189, 248, 0.05), transparent);
+      position: relative;
+    }
+
+    .pricing-card.popular::before {
+      content: "Bestseller";
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--accent);
+      color: #020617;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      text-transform: uppercase;
+    }
+
+    .price-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .price-amount {
+      font-size: 24px;
+      font-weight: 700;
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+
+    .price-amount span {
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--text-muted);
+      text-decoration: line-through;
+    }
+
+    .price-features {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .price-features li::before {
+      content: "✓ ";
+      color: var(--ok);
+    }
+
+    .btn-buy {
+      margin-top: auto;
+      width: 100%;
+      justify-content: center;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      padding: 10px;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .btn-buy:hover {
+      background: rgba(56, 189, 248, 0.2);
+      border-color: var(--accent);
+    }
+
+    .pricing-card.popular .btn-buy {
+      background: var(--accent);
+      color: #020617;
+      border: none;
+    }
+
+    .pricing-card.popular .btn-buy:hover {
+      filter: brightness(1.1);
+    }
+
+    /* Auth-Blocker */
+    .auth-block {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.92), #020617 55%);
+      z-index: 9999;
+    }
+
+    .auth-card {
+      width: min(520px, 100%);
+      border-radius: 18px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      background: rgba(2, 6, 23, 0.9);
+      box-shadow: var(--shadow);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .auth-title {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .auth-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .auth-spinner {
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      border: 2px solid rgba(148, 163, 184, 0.5);
+      border-top-color: var(--accent);
+      animation: spin 0.7s linear infinite;
+      align-self: flex-start;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .app-shell {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 16px 16px 32px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    header.app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-mark {
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 30%, #38bdf8, #6366f1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 16px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.7);
+    }
+
+    .brand-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .brand-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .user-info {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .user-emoji {
+      font-size: 16px;
+    }
+
+    .btn {
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text-main);
+      padding: 8px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      font-family: inherit;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn:hover {
+      border-color: rgba(56, 189, 248, 0.65);
+    }
+
+    .btn-ghost {
+      border-style: dashed;
+      border-color: rgba(148, 163, 184, 0.5);
+      background: transparent;
+      color: var(--text-muted);
+    }
+
+    .btn-ghost:hover {
+      border-color: var(--accent);
+      color: var(--text-main);
+    }
+
+    .btn-primary {
+      border-color: transparent;
+      background: linear-gradient(135deg, #22d3ee, #6366f1);
+      color: white;
+      box-shadow: 0 14px 30px rgba(59, 130, 246, 0.45);
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.05);
+      transform: translateY(-1px);
+    }
+
+    .btn-danger-ghost {
+      border-style: dashed;
+      border-color: rgba(249, 115, 115, 0.4);
+      background: transparent;
+      color: var(--danger);
+    }
+
+    .btn-danger-ghost:hover {
+      border-color: var(--danger);
+      color: #fff;
+      background: rgba(249, 115, 115, 0.15);
+      transform: translateY(-1px);
+    }
+
+    .card {
+      background: radial-gradient(circle at top left, #020617, #020617 40%, #020617 100%);
+      border-radius: 18px;
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow);
+      padding: 16px 16px 18px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .card-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Bot-Auswahl-Kachel */
+    .bots-card .card-title {
+      font-size: 14px;
+    }
+
+    .bots-card .card-sub {
+      font-size: 12px;
+    }
+
+    .bot-tabs {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding: 10px 0 6px;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      scroll-snap-type: x proximity;
+    }
+
+    .bot-tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .bot-tab {
+      border-radius: 999px;
+      padding: 10px 14px;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      font-size: 13px;
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+      white-space: nowrap;
+      scroll-snap-align: center;
+    }
+
+    .bot-tab .thumb {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(148, 163, 184, 0.18);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .bot-tab .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .bot-tab .label {
+      max-width: 220px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: 550;
+    }
+
+    .bot-tab.active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--text-main);
+      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.6);
+    }
+
+    .bot-tab:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 25px rgba(15, 23, 42, 0.65);
+    }
+
+    .bot-tab.add {
+      border-style: dashed;
+      opacity: 0.95;
+    }
+
+    .bot-tab.add span.plus {
+      font-size: 16px;
+    }
+
+    .bot-tab.draft {
+      border-style: dashed;
+      opacity: 0.95;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      color: var(--text-muted);
+    }
+
+    main.app-main {
+      display: grid;
+      grid-template-columns: minmax(0, 1.5fr) minmax(0, 1.2fr);
+      gap: 18px;
+    }
+
+    @media (max-width: 900px) {
+      main.app-main {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    /* Stepper etc */
+    .stepper {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      padding-top: 4px;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .stepper::-webkit-scrollbar {
+      display: none;
+    }
+
+    .step-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      background: rgba(15, 23, 42, 0.8);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .step-pill.active {
+      background: var(--accent-soft);
+      color: var(--text-main);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.5);
+    }
+
+    .step-pill span.index {
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(15, 23, 42, 0.9);
+      font-size: 11px;
+    }
+
+    .step-pill.active span.index {
+      background: var(--accent);
+    }
+
+    form#tenant-form {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-top: 4px;
+    }
+
+    .step-section {
+      display: none;
+      gap: 10px;
+      flex-direction: column;
+      margin-top: 4px;
+    }
+
+    .step-section.active {
+      display: flex;
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    @media (max-width: 600px) {
+      .field-row {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .field label {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .field label span.badge {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      color: var(--text-muted);
+    }
+
+    .field input,
+    .field textarea,
+    .field select {
+      border-radius: 9px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      background: rgba(15, 23, 42, 0.85);
+      padding: 8px 9px;
+      color: var(--text-main);
+      font-size: 13px;
+      outline: none;
+      resize: vertical;
+      min-height: 0;
+    }
+
+    .field textarea {
+      min-height: 84px;
+    }
+
+    .field input:focus,
+    .field textarea:focus,
+    .field select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.35);
+    }
+
+    .field small {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .step-buttons {
+      display: inline-flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .status-text {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .status-text.ok {
+      color: var(--ok);
+    }
+
+    .status-text.error {
+      color: var(--danger);
+    }
+
+    .panel-section {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .preview-box {
+      border-radius: 14px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: radial-gradient(circle at top left, #020617, #020617 40%, #020617 100%);
+      padding: 8px;
+      height: 340px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .preview-header {
+      font-size: 13px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .iframe-preview {
+      flex: 1;
+      border-radius: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      overflow: hidden;
+      background: #020617;
+      position: relative;
+    }
+
+    .iframe-preview iframe {
+      border: none;
+      width: 100%;
+      height: 100%;
+    }
+
+    .preview-loading {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+      background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.9), #020617 60%);
+      z-index: 2;
+    }
+
+    .preview-spinner {
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      border: 2px solid rgba(148, 163, 184, 0.5);
+      border-top-color: var(--accent);
+      animation: spin 0.7s linear infinite;
+    }
+
+    .code-box {
+      border-radius: 14px;
+      border: 1px dashed rgba(148, 163, 184, 0.6);
+      background: rgba(15, 23, 42, 0.9);
+      padding: 10px;
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .code-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 12px;
+    }
+
+    .code-body textarea {
+      width: 100%;
+      min-height: 70px;
+      max-height: 140px;
+      border-radius: 8px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: #020617;
+      color: #e5e7eb;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 11px;
+      padding: 8px;
+      resize: vertical;
+    }
+
+    /* Analytics UI */
+    .analytics-card .card-header {
+      margin-bottom: 12px;
+    }
+
+    .analytics-header {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+    }
+
+    .analytics-headline {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .analytics-toggle {
+      min-width: 44px;
+      justify-content: center;
+    }
+
+    .range-switch {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: center;
+      /* ✅ mobil mittig */
+      width: 100%;
+    }
+
+    @media (min-width: 900px) {
+      .analytics-header {
+        flex-direction: row;
+        align-items: center;
+      }
+
+      .analytics-headline {
+        flex: 1;
+      }
+
+      .range-switch {
+        width: auto;
+        justify-content: flex-end;
+        /* ✅ desktop rechts */
+      }
+    }
+
+    /* Collapsible Analytics */
+    #analytics-card.is-collapsed #analytics-empty,
+    #analytics-card.is-collapsed #analytics-body {
+      display: none !important;
+    }
+
+    /* Header klickbar */
+    #analytics-card .card-header {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    /* moderner Grip-Bar unten */
+    .analytics-grip {
+      margin-top: 10px;
+      height: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-top: 1px solid rgba(148, 163, 184, 0.18);
+      position: relative;
+    }
+
+    .analytics-grip::before {
+      content: "";
+      width: 90px;
+      height: 3px;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.28);
+    }
+
+    .analytics-arrow {
+      position: absolute;
+      top: -2px;
+      font-size: 14px;
+      color: rgba(156, 163, 175, 0.9);
+      transition: transform .18s ease;
+    }
+
+    /* Pfeil dreht sich */
+    #analytics-card.is-collapsed .analytics-arrow {
+      transform: rotate(-90deg);
+    }
+
+    #analytics-card:not(.is-collapsed) .analytics-arrow {
+      transform: rotate(0deg);
+    }
+
+
+
+    .seg {
+      display: inline-flex;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      background: rgba(15, 23, 42, 0.55);
+      border-radius: 999px;
+      padding: 4px;
+      gap: 4px;
+    }
+
+    .seg button {
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all .12s ease;
+      font-family: inherit;
+    }
+
+    .seg button:hover {
+      color: var(--text-main);
+    }
+
+    .seg button.active {
+      background: var(--accent-soft);
+      color: var(--text-main);
+      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.45) inset;
+    }
+
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 900px) {
+      .analytics-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .metric-row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    @media (max-width: 900px) {
+      .metric-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 520px) {
+      .metric-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .metric {
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      background: rgba(15, 23, 42, 0.45);
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: 0 10px 26px rgba(15, 23, 42, 0.35);
+    }
+
+    .metric .k {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .metric .v {
+      font-size: 22px;
+      font-weight: 750;
+      margin-top: 6px;
+    }
+
+    .metric .s {
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .panel {
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      background: rgba(15, 23, 42, 0.35);
+      border-radius: 16px;
+      padding: 12px;
+      min-width: 0;
+    }
+
+    .panel-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    .panel-title strong {
+      color: var(--text-main);
+      font-weight: 650;
+    }
+
+    .chart-scroll-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 8px;
+    }
+
+    .chart-scroll-wrapper::-webkit-scrollbar {
+      height: 6px;
+    }
+
+    .chart-scroll-wrapper::-webkit-scrollbar-track {
+      background: transparent;
+      border-radius: 10px;
+    }
+
+    .chart-scroll-wrapper::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.3);
+      border-radius: 10px;
+    }
+
+    .chart-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+      background: rgba(148, 163, 184, 0.5);
+    }
+
+    .chart-inner-wrapper {
+      position: relative;
+      min-width: 100%;
+      height: 260px;
+    }
+
+    .panel.small .chart-inner-wrapper {
+      height: 220px;
+    }
+
+    .panel canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    .searchbar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 4px;
+    }
+
+    .searchbar input {
+      flex: 1;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      background: rgba(15, 23, 42, 0.55);
+      padding: 9px 12px;
+      color: var(--text-main);
+      font-size: 12px;
+      outline: none;
+    }
+
+    .list {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 260px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      background: rgba(2, 6, 23, 0.35);
+      border-radius: 12px;
+      padding: 10px 10px;
+    }
+
+    .row .left {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .row .left .main {
+      font-size: 12px;
+      color: var(--text-main);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .row .left .sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .row .right {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    .chip {
+      border-radius: 999px;
+      padding: 3px 8px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      background: rgba(15, 23, 42, 0.6);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .empty {
+      border: 1px dashed rgba(148, 163, 184, 0.35);
+      background: rgba(15, 23, 42, 0.35);
+      border-radius: 16px;
+      padding: 12px;
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    footer {
+      max-width: 1120px;
+      width: 100%;
+      margin: 8px auto 12px;
+      padding: 0 16px;
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* ================================
+   Analytics Toggle – Pfeil größer
+   ================================ */
+
+    .analytics-collapse-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 14px;
+    }
+
+    .analytics-collapse-btn .chev {
+      font-size: 20px;
+      line-height: 1;
+      font-weight: 700;
+    }
+
+    /* === Image Preview Upload === */
+    .img-preview-wrapper {
+      position: relative;
+      display: inline-block;
+      width: fit-content;
+    }
+
+    .img-preview-wrapper img {
+      width: 46px;
+      height: 46px;
+      border-radius: 8px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      object-fit: cover;
+      display: block;
+      background: rgba(15, 23, 42, 0.6);
+    }
+
+    .img-preview-wrapper.avatar img {
+      border-radius: 999px;
+    }
+
+    .img-remove-btn {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      width: 22px;
+      height: 22px;
+      background: rgba(15, 23, 42, 0.85);
+      color: var(--text-muted);
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      backdrop-filter: blur(4px);
+      opacity: 0;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      line-height: 1;
+      user-select: none;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    .img-remove-btn:hover {
+      border-color: var(--danger);
+      color: var(--danger);
+      background: rgba(249, 115, 115, 0.1);
+      transform: scale(1.1);
+    }
+
+    .img-preview-wrapper:hover .img-remove-btn {
+      opacity: 1;
+    }
+
+    @media (hover: none) {
+      .img-remove-btn {
+        opacity: 1;
+      }
+    }
+
+    .custom-file-upload {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px dashed rgba(56, 189, 248, 0.4);
+      color: var(--text-main);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s;
+      width: fit-content;
+    }
+
+    .custom-file-upload:hover {
+      background: rgba(56, 189, 248, 0.1);
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .custom-file-upload input[type="file"] {
+      display: none;
+    }
+
+    /* ================================
+   Mobile Optimizations (max-width: 600px)
+   ================================ */
+    @media (max-width: 600px) {
+      .app-shell {
+        padding: 12px 10px 24px;
+      }
+
+      header.app-header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .brand {
+        justify-content: center;
+        margin-bottom: 8px;
+        text-align: center;
+      }
+
+      .header-right {
+        justify-content: center;
+        width: 100%;
+        gap: 8px;
+      }
+
+      /* Buttons under each other and full width */
+      .actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+      }
+
+      .actions>div {
+        flex-direction: column;
+        width: 100%;
+      }
+
+      .actions button {
+        width: 100%;
+        justify-content: center;
+        padding: 10px;
+        font-size: 14px;
+      }
+
+      /* Make inputs larger for mobile tapping */
+      .field input,
+      .field textarea,
+      .field select {
+        padding: 10px;
+        font-size: 14px;
+      }
+
+      /* Make tabs wrap or scroll better */
+      .bot-tabs {
+        padding-bottom: 12px;
+      }
+
+      .site-footer {
+        flex-direction: column !important;
+        align-items: center !important;
+        text-align: center;
+        gap: 16px !important;
+        padding: 24px 16px !important;
+      }
+
+      .site-footer>div:last-child {
+        justify-content: center !important;
+        flex-wrap: wrap !important;
+      }
+
+      /* Analytics Header kompakt */
+      .analytics-header {
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+        gap: 10px !important;
+      }
+
+      .analytics-headline {
+        flex: 1 1 0% !important;
+        min-width: 0 !important;
+      }
+
+      .analytics-actions {
+        width: 100%;
+      }
+
+      #btn-refresh-analytics {
+        width: 100% !important;
+        margin-left: 0 !important;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="auth-block" id="auth-block">
+    <div class="auth-card">
+      <div class="auth-spinner"></div>
+      <div class="auth-title">Login wird geprüft …</div>
+      <div class="auth-sub">Wenn du nicht eingeloggt bist, wirst du zur Anmeldung weitergeleitet.</div>
+    </div>
+  </div>
+
+  <div class="app-shell hidden" id="app-shell">
+
+    <header class="app-header">
+      <div class="brand">
+        <img src="/logo_SF_transparent.png" alt="SF Logo"
+          style="width: 38px; height: 38px; object-fit: contain; margin-right: 4px;">
+        <div class="brand-text">
+          <div class="brand-title">Chatbot & SEO Dashboard</div>
+          <div class="brand-sub">Dein eigener KI-Chatbot für jede Website</div>
+        </div>
+      </div>
+
+      <div class="header-right"
+        style="display:flex;align-items:center;gap:12px;font-size:13px;color:var(--text-muted);">
+        <span id="account-email-label"></span>
+        <span id="account-plan-badge" class="plan-badge free" style="display:none;">Free</span>
+
+        <button id="btn-settings-header" class="btn btn-ghost"
+          style="padding:8px 12px;font-size:14px; border-color:transparent; background:transparent;"
+          title="Einstellungen">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- BOTS -->
+    <section class="card bots-card">
+      <div class="card-header" style="margin-bottom:6px;">
+        <div>
+          <div class="card-title">Deine Chatbots</div>
+          <div class="card-sub">Hier verwaltest du alle deine erstellten Chatbots. Klicke auf einen Bot, um ihn zu
+            bearbeiten oder Statistiken einzusehen.</div>
+        </div>
+      </div>
+      <div class="bot-tabs" id="bot-tabs"></div>
+    </section>
+
+    <!-- ANALYTICS -->
+    <section class="card analytics-card" id="analytics-card">
+      <div class="card-header analytics-header">
+
+        <button type="button" class="analytics-collapse-btn" id="btn-toggle-analytics" aria-expanded="false"
+          title="Website Performance ein-/ausklappen">
+          <span class="chev">▾</span>
+        </button>
+
+        <div class="analytics-headline">
+          <div>
+            <div class="card-title">Website Performance</div>
+            <div class="card-sub" id="analytics-sub">Wähle einen gespeicherten Chatbot aus, um Statistiken zu sehen.
+            </div>
+          </div>
+        </div>
+
+        <div class="analytics-actions">
+          <button type="button" class="btn btn-ghost" id="btn-refresh-analytics" style="margin-left:auto;">🔄
+            Aktualisieren</button>
+        </div>
+
+        <!-- Range Selector ausgeblendet, da Backend nur statische Daten liefert -->
+        <div class="range-switch" id="range-switch" style="display:none !important;">
+          <div class="seg" id="range-seg">
+            <button type="button" data-range="day">Tag</button>
+            <button type="button" data-range="week">Woche</button>
+            <button type="button" data-range="month" class="active">Monat</button>
+            <button type="button" data-range="year">Jahr</button>
+            <button type="button" data-range="max">Max</button>
+          </div>
+
+          <span class="pill" id="range-pill"><span>📊</span> <span id="range-pill-text">Monat</span></span>
+        </div>
+      </div>
+
+      <div id="analytics-empty" class="empty">
+        Noch keine Daten. Sobald Tracking aktiv ist und Besucher auf deiner Website waren, erscheinen hier Diagramme &
+        Top-Seiten.
+      </div>
+
+      <div id="analytics-body" class="hidden">
+        <div class="metric-row">
+          <div class="metric">
+            <div class="k">👀 Aufrufe</div>
+            <div class="v" id="m-views">–</div>
+            <div class="s" id="m-views-sub">–</div>
+          </div>
+          <div class="metric">
+            <div class="k">📅 Heute</div>
+            <div class="v" id="m-today">–</div>
+            <div class="s" id="m-yesterday">–</div>
+          </div>
+          <div class="metric">
+            <div class="k">🏁 Top Landingpage</div>
+            <div class="v"
+              style="font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+              id="m-top-page">–</div>
+            <div class="s" id="m-top-page-sub">–</div>
+          </div>
+          <div class="metric">
+            <div class="k">🔗 Top Referrer</div>
+            <div class="v"
+              style="font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+              id="m-top-ref">–</div>
+            <div class="s" id="m-top-ref-sub">–</div>
+          </div>
+        </div>
+
+        <div class="analytics-grid">
+          <div class="panel">
+            <div class="panel-title">
+              <div><strong>Trend</strong> · Aufrufe über Zeit</div>
+              <div class="chip" id="trend-hint">line</div>
+            </div>
+            <div class="chart-scroll-wrapper">
+              <div class="chart-inner-wrapper" id="trend-inner-wrapper">
+                <canvas id="chart-trend"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel small">
+            <div class="panel-title">
+              <div><strong>Nachrichten</strong> <span class="muted">· Verlauf</span></div>
+              <div class="chip" id="chat-total-badge">0</div>
+            </div>
+            <div class="chart-scroll-wrapper">
+              <div class="chart-inner-wrapper" id="ref-inner-wrapper">
+                <canvas id="chart-ref"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-title">
+              <div><strong>Top Pages</strong> · Beliebte Landingpages</div>
+              <div class="chip" id="pages-hint">bar</div>
+            </div>
+
+            <div class="searchbar">
+              <input id="search-pages" placeholder="Seite suchen (z. B. /kontakt, /leistungen, /blog …)">
+            </div>
+            <div class="list" id="list-pages"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-title">
+              <div><strong>Referrer</strong> · Woher kamen Nutzer?</div>
+              <div class="chip" id="refs-hint">list</div>
+            </div>
+
+            <div class="searchbar">
+              <input id="search-refs" placeholder="Referrer suchen (z. B. google, facebook, newsletter …)">
+            </div>
+            <div class="list" id="list-refs"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <main class="app-main">
+      <!-- LINKES PANEL -->
+      <section class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Chatbot für dein Unternehmen einrichten</div>
+            <div class="card-sub">In ein paar Schritten zu Chatbot + SEO-Snippet für deine Website.</div>
+          </div>
+        </div>
+
+        <nav class="stepper" id="stepper">
+          <button type="button" class="step-pill active" data-step="0"><span class="index">1</span> Unternehmen</button>
+          <button type="button" class="step-pill" data-step="1"><span class="index">2</span> Kontakt & Adresse</button>
+          <button type="button" class="step-pill" data-step="2"><span class="index">3</span> Social & Chatbot</button>
+          <button type="button" class="step-pill" data-step="3"><span class="index">4</span> Beschreibung &
+            Speichern</button>
+        </nav>
+
+        <form id="tenant-form" novalidate>
+          <div class="step-section active" data-step="0">
+            <div class="field">
+              <label for="projectName">Chatbot-Projektname <span class="badge">Nur fürs Dashboard</span></label>
+              <input id="projectName" name="projectName" type="text"
+                placeholder="z. B. Haupt-Website, Onlineshop, Standort Hannover …">
+              <small>Damit du mehrere Chatbots in der Übersicht leicht auseinanderhalten kannst.</small>
+            </div>
+
+            <div class="field">
+              <label for="companyName">Firmenname <span class="badge">Pflicht</span></label>
+              <input id="companyName" name="companyName" type="text" placeholder="z. B. Zahnarztpraxis Dr. Anna Müller"
+                required>
+              <small>So wird dein Unternehmen im Chatbot & in den SEO-Empfehlungen genannt.</small>
+            </div>
+
+            <div class="field-row">
+              <div class="field">
+                <label for="industry">Branche <span class="badge">Empfohlen</span></label>
+                <input id="industry" name="industry" type="text" placeholder="z. B. Zahnarzt, Restaurant, Friseur …">
+                <small>Hilft der KI, passende Texte und FAQs zu erzeugen.</small>
+              </div>
+              <div class="field">
+                <label for="language">Sprache <span class="badge">Pflicht</span></label>
+                <select id="language" name="language">
+                  <option value="de" selected>Deutsch</option>
+                  <option value="en">Englisch</option>
+                </select>
+                <small>In dieser Sprache beantwortet dein Chatbot Fragen.</small>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="websiteUrl">Website-URL <span class="badge">Empfohlen</span></label>
+              <input id="websiteUrl" name="websiteUrl" type="url" placeholder="https://deine-domain.de">
+              <small>Die KI liest grob Titel & Beschreibung deiner Website mit.</small>
+            </div>
+          </div>
+
+          <div class="step-section" data-step="1">
+            <div class="field-row">
+              <div class="field">
+                <label for="notifyName">Ansprechpartner-Name</label>
+                <input id="notifyName" name="notifyName" type="text" placeholder="z. B. Anna Müller">
+                <small>Wird im E-Mail-Betreff verwendet.</small>
+              </div>
+              <div class="field">
+                <label for="notifyEmail">E-Mail für Anfragen <span class="badge">Pflicht</span></label>
+                <input id="notifyEmail" name="notifyEmail" type="email" placeholder="anfragen@deine-domain.de" required>
+                <small>Dorthin sendet der Chatbot neue Kundenanfragen.</small>
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div class="field">
+                <label for="publicEmail">Öffentliche E-Mail</label>
+                <input id="publicEmail" name="publicEmail" type="email" placeholder="info@deine-domain.de">
+                <small>Kann in SEO & strukturierten Daten genutzt werden.</small>
+              </div>
+              <div class="field">
+                <label for="phone">Telefonnummer</label>
+                <input id="phone" name="phone" type="tel" placeholder="+49 123 456789">
+                <small>Optional für SEO & strukturierte Daten.</small>
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div class="field">
+                <label>Logo</label>
+                <input id="logoUrl" name="logoUrl" type="hidden">
+                <div class="upload-row" id="logoUploadRow" style="display: flex; flex-direction: column; gap: 6px;">
+                  <small>Lade hier dein Logo hoch (PNG/JPG, max. 1,5 MB).</small>
+                  <label class="custom-file-upload">
+                    <span class="icon">📁</span> Bild auswählen
+                    <input id="logoFile" type="file" accept="image/*">
+                  </label>
+                </div>
+                <div id="logoThumbRow" style="display:none;margin-top:8px;align-items:center;gap:12px;">
+                  <div class="img-preview-wrapper logo">
+                    <img id="logoThumb" src="" alt="Logo">
+                    <div class="img-remove-btn" id="logoClear" title="Logo löschen">×</div>
+                  </div>
+                  <small id="logoThumbLabel" style="font-size:11px;color:var(--text-muted);"></small>
+                </div>
+              </div>
+
+              <div class="field">
+                <label for="openingHours">Öffnungszeiten</label>
+                <input id="openingHours" name="openingHours" type="text"
+                  placeholder="Mo–Fr 8–18 Uhr, Sa nach Vereinbarung">
+                <small>Freitext, wird von der KI in JSON-LD übernommen.</small>
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div class="field">
+                <label for="street">Straße & Hausnummer</label>
+                <input id="street" name="street" type="text" placeholder="Musterstraße 1">
+              </div>
+              <div class="field">
+                <label for="postalCode">PLZ & Ort</label>
+                <input id="postalCode" name="postalCode" type="text" placeholder="31582 Nienburg">
+              </div>
+            </div>
+
+                        <div class="field">
+              <label for="country">Land</label>
+              <input id="country" name="country" type="text" placeholder="DE, AT, CH …">
+            </div>
+
+            <!-- NEU: Local SEO & GEO Erweiterungen -->
+            <div style="margin-top: 18px; padding: 16px; background: rgba(15,23,42,0.45); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 12px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 16px;">📍</span>
+                  <strong style="color: var(--text-main); font-size: 14px;">Local SEO & GEO-Optimierung</strong>
+                </div>
+                <span style="font-size: 11px; padding: 2px 8px; border-radius: 9999px; background: rgba(56, 189, 248, 0.15); color: var(--accent); font-weight: 600;">Google Maps & Einzugsgebiete</span>
+              </div>
+
+              <div class="field" style="margin-bottom: 14px;">
+                <label for="mapsUrl" style="display: flex; justify-content: space-between; align-items: center;">
+                  <span>Google Maps Unternehmens-Link</span>
+                  <small style="color: var(--text-muted); font-weight: normal;">Optional</small>
+                </label>
+                <input id="mapsUrl" name="mapsUrl" type="url" placeholder="https://maps.app.goo.gl/... oder Google Business Profil URL">
+                <small style="color: var(--text-muted); font-size: 11px; margin-top: 4px; display: block;">Wird im Schema.org JSON-LD als <code>hasMap</code> und im <code>sameAs</code> verknüpft.</small>
+              </div>
+
+              <div class="field">
+                <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <span>Tätigkeitsbereich / Einzugsgebiete (Städte & Regionen)</span>
+                  <small style="color: var(--text-muted); font-weight: normal;">Tag-Eingabe (Enter oder Komma)</small>
+                </label>
+                <div id="areaServedWrapper" style="display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 10px; background: rgba(2, 6, 23, 0.6); border: 1px solid var(--border-subtle); border-radius: 8px; min-height: 44px; align-items: center; cursor: text;">
+                  <div id="areaServedTags" style="display: flex; flex-wrap: wrap; gap: 6px;"></div>
+                  <input id="areaServedInput" type="text" placeholder="Stadt / Region eingeben & Enter drücken..." style="border: none; background: transparent; color: var(--text-main); outline: none; flex: 1; min-width: 140px; padding: 4px 6px; font-size: 13px;">
+                </div>
+                <small style="color: var(--text-muted); font-size: 11px; margin-top: 4px; display: block;">
+                  💡 Signalisiert Google & KI-Suchmaschinen (Perplexity, ChatGPT Search) die Reichweite deines Kunden (z. B. für <em>„Heizung Lehrte“</em> oder <em>„Badsanierung Burgdorf“</em>).
+                </small>
+                <div id="areaServedSuggestions" style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="step-section" data-step="2">
+            <div class="field"
+              style="margin-bottom: 12px; background: rgba(15,23,42,0.4); padding: 14px; border-radius: 12px; border: 1px solid var(--border-subtle);">
+              <label
+                style="margin-bottom: 8px; font-weight: 600; font-size: 14px; color: var(--text-main);">Chatbot-Fähigkeiten
+                (Mehrfachauswahl)</label>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox"
+                    name="botModules" value="lead" style="width:16px;height:16px;accent-color:var(--accent);"> 📅
+                  Terminanfragen (Lead)</label>
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox"
+                    name="botModules" value="product" style="width:16px;height:16px;accent-color:var(--accent);"> 📦
+                  Produktanfragen</label>
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox"
+                    name="botModules" value="support" style="width:16px;height:16px;accent-color:var(--accent);"> 🛟
+                  Support & Hilfe</label>
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox"
+                    name="botModules" value="table" style="width:16px;height:16px;accent-color:var(--accent);"> 🍽️
+                  Tischreservierung</label>
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox"
+                    name="botModules" value="room" style="width:16px;height:16px;accent-color:var(--accent);"> 🛏️
+                  Zimmerreservierung</label>
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox"
+                    name="botModules" value="consultant" style="width:16px;height:16px;accent-color:var(--accent);"> 💼
+                  Verkaufsberater</label>
+              </div>
+            </div>
+
+            <div class="field" id="productLinksWrapper"
+              style="display: none; margin-bottom: 12px; background: rgba(15,23,42,0.4); padding: 14px; border-radius: 12px; border: 1px solid var(--border-subtle); transition: all 0.3s ease;">
+              <label
+                style="margin-bottom: 8px; font-weight: 600; font-size: 14px; color: var(--text-main); display: flex; justify-content: space-between; align-items: center;">
+                Produkt-Links <span class="badge" id="productLinksBadge" style="font-weight: 500; font-size: 11px;">0 /
+                  8 Links</span>
+              </label>
+              <small style="display:block; margin-bottom: 12px; color: var(--text-muted);">Füge die URLs deiner Produkte
+                hinzu. Die KI scannt diese Seiten, um die Produkte perfekt zu kennen.</small>
+              <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                <input type="url" id="newProductLinkUrl" placeholder="https://dein-shop.de/produkt-1"
+                  style="flex: 1; border-radius: 8px; border: 1px solid var(--border-subtle); background: rgba(15, 23, 42, 0.6); padding: 10px; color: var(--text-main); font-size: 13px; outline: none;">
+                <button type="button" id="btnAddProductLink" class="btn btn-primary"
+                  style="padding: 8px 16px; font-size: 13px;">Hinzufügen</button>
+              </div>
+              <div id="productLinksTags" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                <!-- Tags werden hier generiert -->
+              </div>
+              <textarea id="productLinksText" style="display: none;"></textarea>
+            </div>
+
+            <div class="field" id="roomCategoriesWrapper"
+              style="display: none; margin-bottom: 12px; background: rgba(15,23,42,0.4); padding: 14px; border-radius: 12px; border: 1px solid var(--border-subtle); transition: all 0.3s ease;">
+              <label style="margin-bottom: 8px; font-weight: 600; font-size: 14px; color: var(--text-main);"
+                for="roomCategoriesText">Zimmerkategorien & Preise</label>
+              <small style="display:block; margin-bottom: 12px; color: var(--text-muted);">Trage hier deine
+                Zimmerkategorien und deren Preise ein. Die KI nutzt diese Informationen bei Reservierungen.</small>
+              <textarea id="roomCategoriesText" placeholder="Einzelzimmer: 50€&#10;Doppelzimmer: 80€&#10;Suite: 150€"
+                style="width: 100%; min-height: 90px; border-radius: 8px; border: 1px solid var(--border-subtle); background: rgba(15, 23, 42, 0.6); padding: 10px; color: var(--text-main); font-size: 13px; outline: none; line-height: 1.5; resize: vertical;"></textarea>
+              <small style="display:block; margin-top:8px; color: var(--text-muted);">Format: "Zimmername: Preis" (eine
+                Kategorie pro Zeile).</small>
+            </div>
+
+            <!-- Der Lock-Screen für Free-User -->
+            <div id="premium-lock" class="upgrade-section">
+              <div class="upgrade-header">
+                <h3>Chatbot freischalten 🚀</h3>
+                <p>Dein SEO-Tool läuft kostenlos. Um den Chatbot auf deiner Seite anzuzeigen, wähle einen Plan.</p>
+              </div>
+              <div class="pricing-grid">
+
+                <div class="pricing-card popular">
+                  <div class="price-title">Pro Plan</div>
+                  <div class="price-amount">25 € <span style="font-size:14px; text-decoration:none">/ Monat</span>
+                    <span>50 €</span>
+                  </div>
+                  <ul class="price-features">
+                    <li>1 Chatbot für deine Website</li>
+                    <li>10.000 Antworten / Monat</li>
+                    <li>Premium Support</li>
+                  </ul>
+                  <a href="https://scholz-friese-chatbot.lemonsqueezy.com/checkout/buy/94d5b5a1-2203-4e3d-a30a-d45486a5caaf"
+                    class="btn-buy lemonsqueezy-button" style="text-decoration:none; text-align:center">Jetzt
+                    Upgraden</a>
+                </div>
+
+                <div class="pricing-card">
+                  <div class="price-title">Unlimited Plan</div>
+                  <div class="price-amount">100 € <span style="font-size:14px; text-decoration:none">/ Monat</span>
+                    <span>150 €</span>
+                  </div>
+                  <ul class="price-features">
+                    <li>Bis zu 10 Chatbots (Multisite)</li>
+                    <li>Unbegrenzte Antworten</li>
+                    <li>Priorisierter Support</li>
+                  </ul>
+                  <a href="https://scholz-friese-chatbot.lemonsqueezy.com/checkout/buy/bd8153c4-1c98-43f3-9246-defb0cde75dd"
+                    class="btn-buy lemonsqueezy-button" style="text-decoration:none; text-align:center">Jetzt
+                    Upgraden</a>
+                </div>
+
+              </div>
+            </div>
+
+
+            <!-- Die eigentliche Checkbox (wird bei Free deaktiviert) -->
+            <div class="field" style="margin-bottom:16px;">
+              <label id="chat-toggle-label"
+                style="display:flex;justify-content:space-between;align-items:center;gap:10px; cursor:pointer; background:rgba(15,23,42,0.6); padding:10px; border-radius:10px; border:1px solid rgba(148,163,184,0.3); transition: opacity 0.3s;">
+                <div>
+                  <span style="font-weight:600; font-size:14px; color:var(--text-main);">Chatbot-Bubble anzeigen</span>
+                  <div id="chat-toggle-desc" style="font-size:12px; color:var(--text-muted); margin-top:2px;">
+                    Haken raus = Chatbot ist unsichtbar (nur SEO/Tracking läuft weiter).
+                  </div>
+                </div>
+                <input type="checkbox" id="chatEnabled" checked
+                  style="width:20px;height:20px;accent-color:var(--accent);">
+              </label>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="botName">Chatbot-Name</label>
+                <input id="botName" name="botName" type="text" placeholder="z. B. Emmy, Tischbutler …">
+                <small>So stellt sich der Chatbot vor.</small>
+              </div>
+
+              <div class="field">
+                <label>Chatbot-Avatar</label>
+
+                <!-- Avatar-URL bleibt technisch vorhanden, aber nicht mehr sichtbar -->
+                <input id="avatarUrl" name="avatarUrl" type="hidden" value="">
+
+                <small>Quadratisches Bild empfohlen (z.B. 512×512).</small>
+
+
+                <div class="upload-row" id="avatarUploadRow" style="display: flex; flex-direction: column; gap: 6px;">
+                  <small>Oder lade hier ein eigenes Bild hoch (PNG/JPG, max. 1 MB).</small>
+                  <label class="custom-file-upload">
+                    <span class="icon">🖼️</span> Bild auswählen
+                    <input id="avatarFile" type="file" accept="image/*">
+                  </label>
+                </div>
+
+                <div id="avatarThumbRow" style="display:none;margin-top:8px;align-items:center;gap:12px;">
+                  <div class="img-preview-wrapper avatar">
+                    <img id="avatarThumb" src="" alt="Chatbot Avatar">
+                    <div class="img-remove-btn" id="avatarClear" title="Avatar löschen">×</div>
+                  </div>
+                  <small id="avatarThumbLabel" style="font-size:11px;color:var(--text-muted);">Aktuelles Bild</small>
+                </div>
+              </div>
+            </div>
+
+            <div class="field"><label>Social Media Links <span class="badge">Optional</span></label></div>
+            <div class="field-row">
+              <div class="field"><label for="facebook">Facebook</label><input id="facebook" name="facebook" type="url"
+                  placeholder="https://facebook.com/deine-seite"></div>
+              <div class="field"><label for="instagram">Instagram</label><input id="instagram" name="instagram"
+                  type="url" placeholder="https://instagram.com/deine-seite"></div>
+            </div>
+            <div class="field-row">
+              <div class="field"><label for="tiktok">TikTok</label><input id="tiktok" name="tiktok" type="url"
+                  placeholder="https://www.tiktok.com/@dein-profil"></div>
+              <div class="field"><label for="youtube">YouTube</label><input id="youtube" name="youtube" type="url"
+                  placeholder="https://youtube.com/@dein-kanal"></div>
+            </div>
+            <div class="field-row">
+              <div class="field"><label for="linkedin">LinkedIn</label><input id="linkedin" name="linkedin" type="url"
+                  placeholder="https://linkedin.com/company/deine-firma"></div>
+              <div class="field"><label for="x">X (Twitter)</label><input id="x" name="x" type="url"
+                  placeholder="https://x.com/dein-profil"></div>
+            </div>
+            <div class="field">
+              <label for="otherSocial">Sonstiger Link (z. B. WhatsApp)</label>
+              <input id="otherSocial" name="otherSocial" type="url" placeholder="https://wa.me/49… oder andere URL">
+            </div>
+          </div>
+
+          <div class="step-section" data-step="3">
+            <div class="field">
+              <label for="knowledgeText">Kurzbeschreibung deines Unternehmens <span
+                  class="badge">Empfohlen</span></label>
+              <textarea id="knowledgeText" name="knowledgeText"
+                placeholder="Beschreibe in eigenen Worten, was ihr macht …"></textarea>
+              <small>Je klarer du hier bist, desto besser passen Antworten & SEO-Vorschläge.</small>
+            </div>
+
+            <div class="field" style="margin-top: 4px; margin-bottom: 4px;">
+              <label
+                style="display:flex;justify-content:space-between;align-items:center;gap:10px; cursor:pointer; background:rgba(15,23,42,0.6); padding:10px; border-radius:10px; border:1px solid rgba(148,163,184,0.3); transition: border-color 0.2s;">
+                <div>
+                  <span style="font-weight:600; font-size:14px; color:var(--text-main);">Cookie-Banner aktivieren</span>
+                  <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">
+                    Zeigt ein dezentes Cookie-Banner an. Tracking startet erst nach Zustimmung.
+                  </div>
+                </div>
+                <input type="checkbox" id="cookieBannerEnabled"
+                  style="width:20px;height:20px;accent-color:var(--accent);">
+              </label>
+
+              <div id="googleAnalyticsWrapper"
+                style="display: none; margin-top: 8px; background: rgba(15,23,42,0.4); padding: 14px; border-radius: 12px; border: 1px solid var(--border-subtle); transition: all 0.3s ease;">
+                <label for="googleAnalyticsId"
+                  style="margin-bottom: 8px; font-weight: 600; font-size: 14px; color: var(--text-main); display: flex; justify-content: space-between; align-items: center;">
+                  Google Tag / Analytics <span class="badge" style="font-weight: 500; font-size: 11px;">Optional</span>
+                </label>
+                <small style="display:block; margin-bottom: 12px; color: var(--text-muted);">
+                  Trage hier deine Google Tag ID ein (beginnt mit <b>G-</b>, <b>AW-</b> oder <b>GT-</b>). Das Tracking
+                  wird automatisch geladen, sobald ein Besucher das Cookie-Banner akzeptiert.
+                </small>
+                <input type="text" id="googleAnalyticsId" name="googleAnalyticsId"
+                  placeholder="z. B. G-123456789 oder AW-123456789"
+                  style="width: 100%; border-radius: 8px; border: 1px solid var(--border-subtle); background: rgba(15, 23, 42, 0.6); padding: 10px; color: var(--text-main); font-size: 13px; outline: none;">
+              </div>
+            </div>
+
+            <div id="metaPixelWrapper"
+              style="display: none; margin-top: 8px; background: rgba(15,23,42,0.4); padding: 14px; border-radius: 12px; border: 1px solid var(--border-subtle); transition: all 0.3s ease;">
+              <label for="metaPixelId"
+                style="margin-bottom: 8px; font-weight: 600; font-size: 14px; color: var(--text-main); display: flex; justify-content: space-between; align-items: center;">
+                Meta Pixel <span class="badge" style="font-weight: 500; font-size: 11px;">Optional</span>
+              </label>
+              <small style="display:block; margin-bottom: 12px; color: var(--text-muted);">
+                Trage hier deine Meta Pixel ID ein. Der Pixel wird automatisch geladen, sobald ein Besucher das
+                Cookie-Banner akzeptiert.
+              </small>
+              <input type="text" id="metaPixelId" name="metaPixelId" placeholder="z. B. 123456789012345"
+                inputmode="numeric"
+                style="width: 100%; border-radius: 8px; border: 1px solid var(--border-subtle); background: rgba(15, 23, 42, 0.6); padding: 10px; color: var(--text-main); font-size: 13px; outline: none;">
+            </div>
+
+            <div class="field">
+              <label style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+                <span>Website Tracking aktivieren <span class="badge">Optional</span></span>
+                <input type="checkbox" id="trackingEnabled" style="width:18px;height:18px;accent-color: var(--accent);">
+              </label>
+              <small>Wenn aktiv, ist Tracking automatisch im Snippet enthalten (track.js). DSGVO: nur mit Zustimmung
+                nutzen.</small>
+            </div>
+          </div>
+
+          <div class="actions">
+            <div class="step-buttons">
+              <button type="button" class="btn btn-ghost" id="btn-prev"><span class="icon">←</span> Zurück</button>
+              <button type="button" class="btn btn-ghost" id="btn-next">Weiter <span class="icon">→</span></button>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <!-- NEU: Der Löschen-Button (standardmäßig unsichtbar) -->
+              <button type="button" class="btn btn-danger-ghost" id="btn-delete" style="display: none;"><span
+                  class="icon">🗑️</span> Löschen</button>
+
+              <button type="submit" class="btn btn-primary" id="btn-save"><span class="icon">✨</span> Speichern & Iframe
+                erzeugen</button>
+            </div>
+          </div>
+          <div class="status-text" id="status-text"></div>
+        </form>
+      </section>
+
+      <!-- RECHTES PANEL -->
+      <section class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Vorschau & Einbettung</div>
+            <div class="card-sub">Hier siehst du deinen Chatbot und den Code für deine Website.</div>
+          </div>
+          <div class="pill"><span>🔒</span> Nur für dich sichtbar</div>
+        </div>
+
+        <div class="panel-section">
+          <div class="preview-box">
+            <div class="preview-header">
+              <span>Chatbot-Vorschau</span>
+              <span id="preview-label" style="font-size:11px;color:var(--text-muted);">Noch nicht gespeichert</span>
+            </div>
+            <div class="iframe-preview" id="iframe-preview">
+              <div
+                style="height:100%;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-muted);padding:12px;text-align:center;">
+                Nachdem du gespeichert hast, siehst du hier eine echte Vorschau deines Chatbots.
+              </div>
+            </div>
+          </div>
+
+          <div class="code-box">
+            <div class="code-header">
+              <span>Iframe-Code zum Einfügen in deine Website</span>
+              <button type="button" class="btn btn-ghost" id="btn-copy-iframe"><span class="icon">📋</span> Code
+                kopieren</button>
+            </div>
+            <div class="code-body">
+              <textarea id="iframe-code" readonly
+                placeholder="Hier erscheint der Iframe-Code nach dem Speichern."></textarea>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- SAUBERER FOOTER IM HAUPTBEREICH -->
+  <footer class="site-footer"
+    style="margin-top: 40px; padding: 20px 0; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); font-size: 12px; color: var(--text-muted);">
+    <div>Scholz-Friese Webdesign – KI-Chatbots für Unternehmen</div>
+    <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;">
+      <a href="mailto:support@scholz-friese-chatbot.de"
+        style="color: inherit; text-decoration: none; opacity: 0.7; transition: opacity 0.2s;">support@scholz-friese-chatbot.de</a>
+      <a href="#" id="open-impressum"
+        style="color: inherit; text-decoration: none; opacity: 0.7; transition: opacity 0.2s;">Impressum</a>
+      <a href="#" id="open-datenschutz"
+        style="color: inherit; text-decoration: none; opacity: 0.7; transition: opacity 0.2s;">Datenschutz</a>
+      <a href="#" id="open-agb"
+        style="color: inherit; text-decoration: none; opacity: 0.7; transition: opacity 0.2s;">AGB</a>
+    </div>
+  </footer>
+
+  <script>
+    // --- IMPRESSUM, DATENSCHUTZ & AGB LOGIK ---
+    document.addEventListener("DOMContentLoaded", () => {
+      // Impressum
+      const impLink = document.getElementById("open-impressum");
+      const impModal = document.getElementById("impressum-modal");
+      const impClose = document.getElementById("close-impressum");
+      if (impLink && impModal && impClose) {
+        impLink.addEventListener("click", (e) => { e.preventDefault(); impModal.style.display = "flex"; });
+        impClose.addEventListener("click", () => { impModal.style.display = "none"; });
+        impModal.addEventListener("click", (e) => { if (e.target === impModal) impModal.style.display = "none"; });
+      }
+
+      // Datenschutz
+      const dsLink = document.getElementById("open-datenschutz");
+      const dsModal = document.getElementById("datenschutz-modal");
+      const dsClose = document.getElementById("close-datenschutz");
+      if (dsLink && dsModal && dsClose) {
+        dsLink.addEventListener("click", (e) => { e.preventDefault(); dsModal.style.display = "flex"; });
+        dsClose.addEventListener("click", () => { dsModal.style.display = "none"; });
+        dsModal.addEventListener("click", (e) => { if (e.target === dsModal) dsModal.style.display = "none"; });
+      }
+
+      // AGB
+      const agbLink = document.getElementById("open-agb");
+      const agbModal = document.getElementById("agb-modal");
+      const agbClose = document.getElementById("close-agb");
+      if (agbLink && agbModal && agbClose) {
+        agbLink.addEventListener("click", (e) => { e.preventDefault(); agbModal.style.display = "flex"; });
+        agbClose.addEventListener("click", () => { agbModal.style.display = "none"; });
+        agbModal.addEventListener("click", (e) => { if (e.target === agbModal) agbModal.style.display = "none"; });
+      }
+    });
+    // -----------------------
+
+    (function () {
+      function authStep(msg) {
+        const s = document.querySelector(".auth-sub");
+        if (s) s.textContent = msg;
+      }
+
+      // === URLs ===
+      const WORKER_BASE_URL = "https://autumn-flower-76fa.friese-scholz.workers.dev"; // Chatbot/Widget/Register/Stats
+      const API_BASE = "https://autumn-flower-76fa.friese-scholz.workers.dev"; // Auth + Bots sind im selben Worker
+
+      // === Storage ===
+      const TOKEN_KEY = "sf_auth_token";     // Token wird im Login gespeichert
+      const UI_KEY = "sf_dashboard_ui_v1"; // nur UI prefs + Draft (nicht Bots!)
+      const MAX_LOGO_MB = 1.5;
+      const MAX_AVATAR_MB = 1.0;
+
+      // Worker default avatar (kein Supabase mehr)
+      const DEFAULT_AVATAR_URL = WORKER_BASE_URL + "/default-avatar";
+
+      const authBlock = document.getElementById("auth-block");
+      const appShell = document.getElementById("app-shell");
+
+      const form = document.getElementById("tenant-form");
+      const stepper = document.getElementById("stepper");
+      const statusText = document.getElementById("status-text");
+      const iframeCodeEl = document.getElementById("iframe-code");
+      const iframePreviewEl = document.getElementById("iframe-preview");
+      const previewLabel = document.getElementById("preview-label");
+      const btnPrev = document.getElementById("btn-prev");
+      const btnNext = document.getElementById("btn-next");
+      const btnSave = document.getElementById("btn-save");
+      const btnDelete = document.getElementById("btn-delete");
+      const btnCopyIframe = document.getElementById("btn-copy-iframe");
+      const botTabsEl = document.getElementById("bot-tabs");
+      const btnLogout = document.getElementById("btn-logout");
+
+      const logoFileInput = document.getElementById("logoFile");
+      const logoThumbRow = document.getElementById("logoThumbRow");
+      const logoThumb = document.getElementById("logoThumb");
+      const logoThumbLabel = document.getElementById("logoThumbLabel");
+
+      const avatarFileInput = document.getElementById("avatarFile");
+      const avatarThumbRow = document.getElementById("avatarThumbRow");
+      const avatarThumb = document.getElementById("avatarThumb");
+      const avatarThumbLabel = document.getElementById("avatarThumbLabel");
+
+      const trackingToggle = document.getElementById("trackingEnabled");
+
+      // Analytics refs
+      const analyticsSub = document.getElementById("analytics-sub");
+      const analyticsEmpty = document.getElementById("analytics-empty");
+      const analyticsBody = document.getElementById("analytics-body");
+      // Analytics collapse
+      const analyticsCard = document.getElementById("analytics-card");
+      const analyticsHeader = document.querySelector("#analytics-card .card-header");
+      const btnToggleAnalytics = document.getElementById("btn-toggle-analytics");
+      const ANALYTICS_COLLAPSE_KEY = "sf_analytics_collapsed_v1";
+
+      function setAnalyticsCollapsed(collapsed) {
+        if (!analyticsCard) return;
+
+        analyticsCard.classList.toggle("is-collapsed", !!collapsed);
+
+        // Button State (Pfeil Rotation macht CSS)
+        if (btnToggleAnalytics) {
+          btnToggleAnalytics.setAttribute("aria-expanded", String(!collapsed));
+        }
+
+        try { localStorage.setItem(ANALYTICS_COLLAPSE_KEY, collapsed ? "1" : "0"); } catch { }
+      }
+
+      (function () {
+        let collapsed = true; // ✅ Default eingeklappt
+        try {
+          const saved = localStorage.getItem(ANALYTICS_COLLAPSE_KEY);
+          if (saved === "0") collapsed = false;
+          if (saved === "1") collapsed = true;
+        } catch { }
+        setAnalyticsCollapsed(collapsed);
+      })();
+
+      function toggleAnalytics() {
+        const collapsed = analyticsCard ? analyticsCard.classList.contains("is-collapsed") : false;
+        setAnalyticsCollapsed(!collapsed);
+      }
+
+      /* ✅ Klick auf Button klappt sicher auf/zu */
+      if (btnToggleAnalytics) {
+        btnToggleAnalytics.addEventListener("click", (e) => {
+          e.stopPropagation();
+          toggleAnalytics();
+        });
+      }
+
+      /* ✅ Klick auf Header klappt auch (aber Buttons/Inputs bleiben normal klickbar) */
+      if (analyticsHeader) {
+        analyticsHeader.addEventListener("click", (e) => {
+          if (e.target.closest("button, input, a, textarea, select")) return;
+          toggleAnalytics();
+        });
+      }
+
+
+      const rangeSeg = document.getElementById("range-seg");
+      const rangePillText = document.getElementById("range-pill-text");
+      const btnRefreshAnalytics = document.getElementById("btn-refresh-analytics");
+      const btnTestTracking = document.getElementById("btn-test-tracking");
+
+
+      const mViews = document.getElementById("m-views");
+      const mViewsSub = document.getElementById("m-views-sub");
+      const mToday = document.getElementById("m-today");
+      const mYesterday = document.getElementById("m-yesterday");
+      const mTopPage = document.getElementById("m-top-page");
+      const mTopPageSub = document.getElementById("m-top-page-sub");
+      const mTopRef = document.getElementById("m-top-ref");
+      const mTopRefSub = document.getElementById("m-top-ref-sub");
+
+      const searchPages = document.getElementById("search-pages");
+      const searchRefs = document.getElementById("search-refs");
+      const listPages = document.getElementById("list-pages");
+      const listRefs = document.getElementById("list-refs");
+
+      let chartTrend = null;
+      let chartRef = null;
+
+      let currentStep = 0;
+      let currentUserPlan = "free";
+
+      // === Bots state ===
+      let bots = [];                 // server bots + optional draft
+      let activeBotIndex = 0;        // index in bots[]
+      let activeRange = "month";     // analytics range
+      let lastStats = null;
+
+      function $(id) { return document.getElementById(id); }
+      function bytesToMB(bytes) { return Math.round(bytes / 1024 / 1024 * 10) / 10; }
+
+      function escapeHtml(s = "") {
+        return String(s).replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+      }
+
+      function getBotWebsiteOrigin() {
+        const bot = getActiveBot();
+        const v = (bot && bot.values) ? bot.values : {};
+
+        // versuche typische Felder (falls du im Formular eins davon speicherst)
+        const raw =
+          v.website || v.websiteUrl || v.domain || v.site || v.companyWebsite || "";
+
+        if (!raw) return "";
+        try {
+          const u = new URL(raw.startsWith("http") ? raw : ("https://" + raw));
+          return u.origin; // https://deine-domain.de
+        } catch {
+          return "";
+        }
+      }
+
+      function showAuthError(title, msg) {
+        const t = document.querySelector(".auth-title");
+        const s = document.querySelector(".auth-sub");
+        if (t) t.textContent = title || "Fehler";
+        if (s) s.textContent = msg || "Unbekannt";
+      }
+
+      window.addEventListener("error", (e) => {
+        showAuthError("JavaScript-Fehler", e.message || String(e.error || e));
+      });
+
+      window.addEventListener("unhandledrejection", (e) => {
+        showAuthError("Promise-Fehler", (e.reason && (e.reason.message || String(e.reason))) || "Unbekannt");
+      });
+
+
+      function formatLandingDisplay(path) {
+        const p = String(path || "/");
+        const origin = getBotWebsiteOrigin();
+
+        // wenn Root: lieber Domain zeigen
+        if ((p === "/" || p === "") && origin) return origin;
+
+        // ansonsten nur Pfad anzeigen (so wie bisher)
+        return p || "–";
+      }
+
+      function setStatus(message, type) {
+        statusText.textContent = message || "";
+        statusText.classList.remove("ok", "error");
+        if (type) statusText.classList.add(type);
+      }
+
+      function cryptoId(len = 16) {
+        const a = new Uint8Array(len);
+        (crypto || self.crypto).getRandomValues(a);
+        return [...a].map(x => x.toString(16).padStart(2, "0")).join("");
+      }
+
+      function getToken() {
+        return localStorage.getItem(TOKEN_KEY) || "";
+      }
+
+      async function apiFetch(path, options) {
+        const token = getToken();
+        const headers = Object.assign({}, (options && options.headers) || {});
+        if (token) headers["Authorization"] = "Bearer " + token;
+
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 8000);
+
+        try {
+          const res = await fetch(API_BASE + path, Object.assign({}, options || {}, {
+            headers,
+            signal: controller.signal
+          }));
+
+          const text = await res.text().catch(() => "");
+          let data = {};
+          try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
+
+          if (res.status === 401) {
+            localStorage.removeItem(TOKEN_KEY);
+            window.location.replace(new URL("index.html", window.location.href));
+            throw new Error("unauthorized");
+          }
+
+          return { res, data };
+        } finally {
+          clearTimeout(timer);
+        }
+      }
+
+
+      async function getMe() {
+        const token = getToken();
+        if (!token) return null;
+
+        const { res, data } = await apiFetch("/auth/me", { method: "GET" });
+        if (res.ok && data && data.ok && data.user) return data.user;
+        return null;
+      }
+
+      async function fetchBotsFromServer() {
+        const { res, data } = await apiFetch("/bots", { method: "GET", cache: "no-store" });
+        if (!res.ok || !data || !data.ok) throw new Error(data && data.error ? data.error : "bots_load_failed");
+        return Array.isArray(data.bots) ? data.bots : [];
+      }
+
+      async function saveBotToServer(bot) {
+        const payload = {
+          id: bot.id || undefined,
+          tenantId: bot.tenantId || null,
+          label: bot.label || "",
+          iframeCode: bot.iframeCode || "",
+          values: bot.values || {}
+        };
+        const { res, data } = await apiFetch("/bots", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          cache: "no-store"
+        });
+        if (!res.ok || !data || !data.ok) throw new Error(data && data.error ? data.error : "bots_save_failed");
+        return data.id;
+      }
+
+      function loadUI() {
+        try {
+          const raw = localStorage.getItem(UI_KEY);
+          if (!raw) return;
+          const d = JSON.parse(raw);
+          if (!d) return;
+
+          if (d.activeRange) activeRange = d.activeRange;
+          if (d.activeBotId) window.__SF_ACTIVE_BOT_ID__ = d.activeBotId;
+          if (d.draft) window.__SF_DRAFT__ = d.draft;
+        } catch { }
+      }
+
+      function saveUI() {
+        try {
+          const active = bots[activeBotIndex];
+          const activeBotId = active && active.id ? active.id : "";
+          localStorage.setItem(UI_KEY, JSON.stringify({
+            activeRange,
+            activeBotId,
+            draft: window.__SF_DRAFT__ || null
+          }));
+        } catch { }
+      }
+
+      function getActiveBot() { return bots[activeBotIndex]; }
+
+      function refreshLogoPreview() {
+        let url = ($("logoUrl").value || "").trim();
+        if (url && url.startsWith("/")) {
+          url = WORKER_BASE_URL + url;
+          $("logoUrl").value = url;
+        }
+
+        if (url) {
+          $("logoThumb").src = url;
+          $("logoThumbRow").style.display = "flex";
+          $("logoThumbLabel").textContent = "Aktuelles Logo";
+          $("logoUploadRow").style.display = "none";
+        } else {
+          $("logoThumbRow").style.display = "none";
+          $("logoUploadRow").style.display = "block";
+          if ($("logoFile")) $("logoFile").value = "";
+        }
+      }
+
+      function refreshAvatarPreview() {
+        let url = ($("avatarUrl").value || "").trim();
+
+        if (url && url.startsWith("/")) {
+          url = WORKER_BASE_URL + url;
+          $("avatarUrl").value = url;
+        }
+
+        if (!url || url === DEFAULT_AVATAR_URL || !/^https?:\/\//i.test(url)) {
+          $("avatarUrl").value = DEFAULT_AVATAR_URL;
+          $("avatarThumbRow").style.display = "none";
+          $("avatarUploadRow").style.display = "block";
+          if ($("avatarFile")) $("avatarFile").value = "";
+        } else {
+          $("avatarThumb").src = url;
+          $("avatarThumbRow").style.display = "flex";
+          $("avatarThumbLabel").textContent = "Aktuelles Bild";
+          $("avatarUploadRow").style.display = "none";
+        }
+      }
+
+
+      function isDesktopLike() {
+        return window.matchMedia("(min-width: 900px)").matches && !("ontouchstart" in window);
+      }
+      function scrollItemIntoView(container, item) {
+        if (!container || !item) return;
+        if (!isDesktopLike()) return;
+        item.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+      }
+
+      function setStep(step) {
+        const maxStep = 3;
+        if (step < 0) step = 0;
+        if (step > maxStep) step = maxStep;
+        currentStep = step;
+
+        document.querySelectorAll(".step-section").forEach(sec => {
+          const s = parseInt(sec.getAttribute("data-step"), 10);
+          sec.classList.toggle("active", s === currentStep);
+        });
+        document.querySelectorAll(".step-pill").forEach(pill => {
+          const s = parseInt(pill.getAttribute("data-step"), 10);
+          pill.classList.toggle("active", s === currentStep);
+        });
+
+        btnPrev.disabled = currentStep === 0;
+        btnNext.disabled = currentStep === maxStep;
+
+        const active = stepper.querySelector(".step-pill.active");
+        if (active) scrollItemIntoView(stepper, active);
+      }
+
+      stepper.addEventListener("click", (e) => {
+        const pill = e.target.closest(".step-pill");
+        if (!pill) return;
+        const step = parseInt(pill.getAttribute("data-step"), 10);
+        setStep(step);
+      });
+      btnPrev.addEventListener("click", () => setStep(currentStep - 1));
+      btnNext.addEventListener("click", () => setStep(currentStep + 1));
+
+      // Setup Tag Input listeners
+      setTimeout(() => {
+        const areaInp = document.getElementById("areaServedInput");
+        if (areaInp) {
+          areaInp.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === ",") {
+              e.preventDefault();
+              addAreaTag(areaInp.value);
+            } else if (e.key === "Backspace" && !areaInp.value && currentAreaTags.length > 0) {
+              currentAreaTags.pop();
+              renderAreaTags();
+            }
+          });
+          areaInp.addEventListener("blur", () => {
+            if (areaInp.value.trim()) addAreaTag(areaInp.value);
+          });
+        }
+        const areaWrap = document.getElementById("areaServedWrapper");
+        if (areaWrap) {
+          areaWrap.addEventListener("click", () => {
+            if (areaInp) areaInp.focus();
+          });
+        }
+        const postInp = document.getElementById("postalCode");
+        if (postInp) {
+          postInp.addEventListener("input", renderSmartSuggestions);
+        }
+      }, 50);
+
+      
+      // === GEO / AREA TAGS LOGIC ===
+      let currentAreaTags = [];
+
+      function renderAreaTags() {
+        const container = document.getElementById("areaServedTags");
+        if (!container) return;
+        container.innerHTML = "";
+        currentAreaTags.forEach((tag, idx) => {
+          const pill = document.createElement("span");
+          pill.style.cssText = "display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 9999px; color: #38bdf8; font-size: 12px; font-weight: 500;";
+          pill.innerHTML = `<span>${escapeHtml(tag)}</span><span style="cursor:pointer; opacity:0.75; font-size:14px; line-height:1; font-weight:bold; margin-left:2px;" onclick="window.removeAreaTag(${idx})" title="Entfernen">&times;</span>`;
+          container.appendChild(pill);
+        });
+        renderSmartSuggestions();
+      }
+
+      window.removeAreaTag = function(idx) {
+        currentAreaTags.splice(idx, 1);
+        renderAreaTags();
+      };
+
+      function addAreaTag(val) {
+        if (!val) return;
+        const parts = val.split(/[,;\n]/);
+        parts.forEach(p => {
+          const clean = p.trim();
+          if (clean && !currentAreaTags.includes(clean)) {
+            currentAreaTags.push(clean);
+          }
+        });
+        renderAreaTags();
+        const inp = document.getElementById("areaServedInput");
+        if (inp) inp.value = "";
+      }
+
+      function renderSmartSuggestions() {
+        const sugBox = document.getElementById("areaServedSuggestions");
+        if (!sugBox) return;
+        sugBox.innerHTML = "";
+
+        const postalVal = (document.getElementById("postalCode")?.value || "").trim();
+        const parts = postalVal.split(" ");
+        const city = parts.slice(1).join(" ").trim() || postalVal.replace(/^[0-9\s]+/, "").trim();
+        if (!city) return;
+
+        const suggestions = [
+          city,
+          "Region " + city,
+          "Landkreis " + city,
+          "Umkreis " + city + " (30 km)"
+        ].filter(s => !currentAreaTags.includes(s));
+
+        if (suggestions.length === 0) return;
+
+        const label = document.createElement("span");
+        label.style.cssText = "font-size: 11px; color: var(--text-muted); margin-right: 4px;";
+        label.textContent = "Vorschläge:";
+        sugBox.appendChild(label);
+
+        suggestions.forEach(sug => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.style.cssText = "background: rgba(255,255,255,0.06); border: 1px dashed rgba(148,163,184,0.3); color: var(--text-muted); border-radius: 9999px; padding: 2px 8px; font-size: 11px; cursor: pointer; transition: all 0.2s;";
+          btn.textContent = "+ " + sug;
+          btn.onmouseover = () => { btn.style.borderColor = "var(--accent)"; btn.style.color = "var(--accent)"; };
+          btn.onmouseout = () => { btn.style.borderColor = "rgba(148,163,184,0.3)"; btn.style.color = "var(--text-muted)"; };
+          btn.onclick = () => addAreaTag(sug);
+          sugBox.appendChild(btn);
+        });
+      }
+
+      function loadBotIntoForm(bot) {
+        const values = bot && bot.values ? bot.values : {};
+
+        $("projectName").value = values.projectName || bot.label || "";
+        $("companyName").value = values.companyName || "";
+        $("industry").value = values.industry || "";
+        $("language").value = values.language || "de";
+        $("websiteUrl").value = values.websiteUrl || "";
+        $("notifyName").value = values.notifyName || "";
+        $("notifyEmail").value = values.notifyEmail || "";
+        $("publicEmail").value = values.publicEmail || "";
+        $("phone").value = values.phone || "";
+        $("logoUrl").value = values.logoUrl || "";
+        $("openingHours").value = values.openingHours || "";
+        $("street").value = values.street || "";
+        $("postalCode").value = values.postalCode || "";
+        $("country").value = values.country || "";
+        if ($("mapsUrl")) $("mapsUrl").value = values.mapsUrl || "";
+        currentAreaTags = [];
+        if (Array.isArray(values.areaServed)) {
+          currentAreaTags = [...values.areaServed];
+        } else if (typeof values.areaServed === "string" && values.areaServed.trim()) {
+          currentAreaTags = values.areaServed.split(",").map(s => s.trim()).filter(Boolean);
+        }
+        renderAreaTags();
+        $("botName").value = values.botName || "";
+        $("avatarUrl").value = values.avatarUrl || DEFAULT_AVATAR_URL;
+        $("facebook").value = values.facebook || "";
+        $("instagram").value = values.instagram || "";
+        $("tiktok").value = values.tiktok || "";
+        $("youtube").value = values.youtube || "";
+        $("linkedin").value = values.linkedin || "";
+        $("x").value = values.x || "";
+        $("otherSocial").value = values.otherSocial || "";
+        $("knowledgeText").value = values.knowledgeText || "";
+
+        const ce = document.getElementById("chatEnabled");
+        const ceLabel = document.getElementById("chat-toggle-label");
+        const ceDesc = document.getElementById("chat-toggle-desc");
+        const premiumLock = document.getElementById("premium-lock");
+
+        if (ce) {
+          const premiumLock = document.getElementById("premium-lock");
+
+          // Logik basierend auf dem Nutzerplan
+          if (currentUserPlan === "free") {
+            ce.checked = false;
+            ce.disabled = true;
+            ceLabel.style.opacity = "0.5";
+            ceLabel.style.cursor = "not-allowed";
+            ceDesc.textContent = "Der Chatbot erfordert ein Premium-Upgrade. Nur SEO ist aktiv.";
+
+            if (premiumLock) premiumLock.style.display = "flex"; // Preise zeigen
+
+          } else {
+            ce.checked = (values.chatEnabled !== false);
+            ce.disabled = false;
+            ceLabel.style.opacity = "1";
+            ceLabel.style.cursor = "pointer";
+            ceDesc.textContent = "Haken raus = Chatbot ist unsichtbar (nur SEO/Tracking läuft weiter).";
+
+            if (premiumLock) premiumLock.style.display = "none"; // Preise verstecken
+          }
+        }
+
+        if (trackingToggle) trackingToggle.checked = !!values.trackingEnabled;
+
+        const cookieToggle = document.getElementById("cookieBannerEnabled");
+        if (cookieToggle) cookieToggle.checked = !!values.cookieBannerEnabled;
+
+        const gaInput = document.getElementById("googleAnalyticsId");
+        if (gaInput) gaInput.value = values.googleAnalyticsId || "";
+
+        const metaInput = document.getElementById("metaPixelId");
+        if (metaInput) metaInput.value = values.metaPixelId || "";
+
+        toggleCookieFields();
+
+        iframeCodeEl.value = bot.iframeCode || "";
+
+        if (bot.tenantId) {
+          // Check chatEnabled
+          if (values.chatEnabled === false) {
+            iframePreviewEl.innerHTML =
+              '<div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:13px;color:var(--text-muted);padding:12px;text-align:center;">' +
+              '<div style="font-size:24px;margin-bottom:8px;">🚫</div>' +
+              '<div><strong>Chatbot ist deaktiviert</strong></div>' +
+              '<div style="font-size:11px;opacity:0.8;margin-top:4px;">Aktiviere die Checkbox, um ihn anzuzeigen.</div>' +
+              '</div>';
+          } else {
+            // Nur laden wenn aktiv
+            updatePreviewIframe(bot.tenantId);
+          }
+          previewLabel.textContent = "Aktiver Chatbot („" + (values.companyName || bot.label || "dein Unternehmen") + "“)";
+        } else {
+          iframePreviewEl.innerHTML =
+            '<div style="height:100%;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-muted);padding:12px;text-align:center;">' +
+            'Nachdem du gespeichert hast, siehst du hier eine echte Vorschau deines Chatbots.' +
+            '</div>';
+          previewLabel.textContent = "Noch nicht gespeichert";
+        }
+
+        refreshAvatarPreview();
+        refreshLogoPreview();
+
+        if (btnDelete) {
+          // Zeige den Löschen-Button nur, wenn der Bot bereits gespeichert ist (kein Entwurf) und eine ID hat
+          btnDelete.style.display = (bot && !bot.__isDraft && bot.id) ? "inline-flex" : "none";
+        }
+
+        // --- NEU: Checkboxen und Textareas befüllen ---
+        const modules = Array.isArray(values.botModules) ? values.botModules : ["lead"];
+        document.querySelectorAll('input[name="botModules"]').forEach(cb => {
+          cb.checked = modules.includes(cb.value);
+        });
+
+        $("productLinksText").value = Array.isArray(values.productLinks) ? values.productLinks.join("\n") : "";
+
+        let roomText = "";
+        if (values.roomCategories && typeof values.roomCategories === "object") {
+          roomText = Object.entries(values.roomCategories).map(([k, v]) => `${k}: ${v}`).join("\n");
+        }
+        $("roomCategoriesText").value = roomText;
+
+        toggleDynamicFields(); // Blendet Felder ein/aus
+        renderProductLinksTags(); // Tags neu zeichnen
+      }
+
+      function toggleDynamicFields() {
+        const modules = Array.from(document.querySelectorAll('input[name="botModules"]:checked')).map(cb => cb.value);
+        const pWrap = $("productLinksWrapper");
+        const rWrap = $("roomCategoriesWrapper");
+
+        if (pWrap) pWrap.style.display = (modules.includes("product") || modules.includes("consultant")) ? "block" : "none";
+        if (rWrap) rWrap.style.display = modules.includes("room") ? "block" : "none";
+      }
+
+      function toggleCookieFields() {
+        const gaWrapper = $("googleAnalyticsWrapper");
+        const metaWrapper = $("metaPixelWrapper");
+        const cookieEnabled = $("cookieBannerEnabled") && $("cookieBannerEnabled").checked;
+
+        if (gaWrapper) gaWrapper.style.display = cookieEnabled ? "block" : "none";
+        if (metaWrapper) metaWrapper.style.display = cookieEnabled ? "block" : "none";
+      }
+
+      // Event-Listener an die Checkboxen hängen
+      document.querySelectorAll('input[name="botModules"]').forEach(cb => {
+        cb.addEventListener("change", () => {
+          toggleDynamicFields();
+          const b = getActiveBot();
+          if (b && b.__isDraft) syncDraftFromForm();
+          else if (b) syncActiveBotFromForm();
+        });
+      });
+
+      // --- NEU: Tags Rendern & Verwalten ---
+      function renderProductLinksTags() {
+        const wrapper = $("productLinksTags");
+        if (!wrapper) return;
+
+        const links = $("productLinksText").value.split("\n").map(s => s.trim()).filter(s => s.startsWith("http"));
+
+        const badge = $("productLinksBadge");
+        if (badge) badge.textContent = `${links.length} / 8 Links`;
+
+        wrapper.innerHTML = "";
+        links.forEach((link, idx) => {
+          const tag = document.createElement("div");
+          tag.style.cssText = "display: inline-flex; align-items: center; gap: 6px; background: rgba(56, 189, 248, 0.1); border: 1px solid var(--accent); color: var(--accent); padding: 4px 10px; border-radius: 100px; font-size: 12px;";
+
+          const textSpan = document.createElement("span");
+          try {
+            const u = new URL(link);
+            let display = u.hostname.replace(/^www\./, '') + u.pathname;
+            if (display.length > 25) display = display.substring(0, 22) + "...";
+            textSpan.textContent = display;
+          } catch (e) {
+            textSpan.textContent = link.substring(0, 25);
+          }
+          textSpan.title = link;
+
+          const delBtn = document.createElement("button");
+          delBtn.type = "button";
+          delBtn.innerHTML = "&times;";
+          delBtn.style.cssText = "background: none; border: none; color: inherit; cursor: pointer; font-size: 16px; padding: 0; display:flex; align-items:center;line-height:1; opacity:0.7;";
+          delBtn.onmouseover = () => delBtn.style.opacity = "1";
+          delBtn.onmouseout = () => delBtn.style.opacity = "0.7";
+
+          delBtn.onclick = () => {
+            links.splice(idx, 1);
+            $("productLinksText").value = links.join("\n");
+            renderProductLinksTags();
+            $("productLinksText").dispatchEvent(new Event("input"));
+          };
+
+          tag.appendChild(textSpan);
+          tag.appendChild(delBtn);
+          wrapper.appendChild(tag);
+        });
+
+        const addBtn = $("btnAddProductLink");
+        const inp = $("newProductLinkUrl");
+        if (addBtn && inp) {
+          const isFull = links.length >= 8;
+          addBtn.disabled = isFull;
+          inp.disabled = isFull;
+          if (isFull) {
+            inp.placeholder = "Max. 8 Links erreicht";
+            addBtn.style.opacity = "0.5";
+          } else {
+            inp.placeholder = "https://dein-shop.de/produkt-1";
+            addBtn.style.opacity = "1";
+          }
+        }
+      }
+
+      const addProductLink = () => {
+        const inp = $("newProductLinkUrl");
+        if (!inp) return;
+        let val = inp.value.trim();
+        if (!val) return;
+        if (!val.startsWith("http")) val = "https://" + val;
+
+        const currentObj = $("productLinksText").value.split("\n").map(s => s.trim()).filter(s => s.startsWith("http"));
+        if (currentObj.length >= 8) return;
+        if (currentObj.includes(val)) {
+          inp.value = "";
+          return;
+        }
+
+        currentObj.push(val);
+        $("productLinksText").value = currentObj.join("\n");
+        inp.value = "";
+        renderProductLinksTags();
+
+        $("productLinksText").dispatchEvent(new Event("input"));
+      };
+
+      const btnAddProductLink = $("btnAddProductLink");
+      if (btnAddProductLink) {
+        btnAddProductLink.addEventListener("click", addProductLink);
+      }
+      const newProductLinkUrl = $("newProductLinkUrl");
+      if (newProductLinkUrl) {
+        newProductLinkUrl.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            addProductLink();
+          }
+        });
+      }
+
+      // Wenn man in die Textareas tippt -> Live-Sync
+      ["productLinksText", "roomCategoriesText"].forEach(id => {
+        const el = $(id);
+        if (el) {
+          el.addEventListener("input", () => {
+            const b = getActiveBot();
+            if (b && b.__isDraft) syncDraftFromForm();
+            else if (b) syncActiveBotFromForm();
+          });
+        }
+      });
+
+      function collectFormValues() {
+        // --- NEU: Checkboxen & Textareas auslesen ---
+        const botModules = Array.from(document.querySelectorAll('input[name="botModules"]:checked')).map(cb => cb.value);
+        if (botModules.length === 0) botModules.push("lead"); // Fallback, falls der User alles abwählt
+
+        const productLinks = $("productLinksText").value.split("\n").map(s => s.trim()).filter(s => s.startsWith("http"));
+
+        const roomCatsObj = {};
+        $("roomCategoriesText").value.split("\n").forEach(line => {
+          const parts = line.split(":");
+          if (parts.length >= 2) {
+            roomCatsObj[parts[0].trim()] = parts.slice(1).join(":").trim();
+          }
+        });
+        // ---------------------------------------------
+
+        return {
+          projectName: $("projectName").value.trim(),
+          companyName: $("companyName").value.trim(),
+          industry: $("industry").value.trim(),
+          language: $("language").value,
+          websiteUrl: $("websiteUrl").value.trim(),
+          notifyName: $("notifyName").value.trim(),
+          notifyEmail: $("notifyEmail").value.trim(),
+          publicEmail: $("publicEmail").value.trim(),
+          phone: $("phone").value.trim(),
+          logoUrl: $("logoUrl").value.trim(),
+          openingHours: $("openingHours").value.trim(),
+          street: $("street").value.trim(),
+          postalCode: $("postalCode").value.trim(),
+          country: $("country").value.trim(),
+          mapsUrl: ($("mapsUrl")?.value || "").trim(),
+          areaServed: [...currentAreaTags],
+          botName: $("botName").value.trim(),
+          avatarUrl: $("avatarUrl").value.trim() || DEFAULT_AVATAR_URL,
+          facebook: $("facebook").value.trim(),
+          instagram: $("instagram").value.trim(),
+          tiktok: $("tiktok").value.trim(),
+          youtube: $("youtube").value.trim(),
+          linkedin: $("linkedin").value.trim(),
+          x: $("x").value.trim(),
+          otherSocial: $("otherSocial").value.trim(),
+          knowledgeText: $("knowledgeText").value.trim(),
+          chatEnabled: document.getElementById("chatEnabled").checked,
+          trackingEnabled: !!(trackingToggle && trackingToggle.checked),
+          cookieBannerEnabled: !!(document.getElementById("cookieBannerEnabled") && document.getElementById("cookieBannerEnabled").checked),
+          googleAnalyticsId: document.getElementById("googleAnalyticsId") ? document.getElementById("googleAnalyticsId").value.trim() : "",
+          metaPixelId: document.getElementById("metaPixelId") ? document.getElementById("metaPixelId").value.trim().replace(/[^0-9]/g, "") : "",
+
+          // NEU EINGEFÜGT:
+          botModules: botModules,
+          productLinks: productLinks,
+          roomCategories: roomCatsObj
+        };
+      }
+
+      function ensureDraft() {
+        if (!window.__SF_DRAFT__) {
+          window.__SF_DRAFT__ = {
+            id: null,
+            // --- NEU: Wir generieren sofort eine ID, damit Uploads sofort klappen! ---
+            tenantId: "bot-" + cryptoId(6),
+            label: "Neuer Chatbot (Entwurf)",
+            iframeCode: "",
+            values: {
+              language: "de",
+              avatarUrl: DEFAULT_AVATAR_URL,
+              trackingEnabled: false,
+              cookieBannerEnabled: false,
+              googleAnalyticsId: "",
+              metaPixelId: ""
+            }
+          };
+        }
+        return window.__SF_DRAFT__;
+      }
+
+      function syncActiveBotFromForm() {
+        const bot = getActiveBot();
+        if (!bot) return;
+
+        const v = collectFormValues();
+
+        bot.values = Object.assign({}, bot.values || {}, v);
+        bot.label = v.projectName || v.botName || v.companyName || bot.label || "Chatbot";
+
+        // Wenn es ein Draft ist, zusätzlich Draft-Store aktualisieren
+        if (bot.__isDraft) {
+          window.__SF_DRAFT__ = Object.assign({}, window.__SF_DRAFT__ || {}, bot);
+        }
+
+        saveUI();
+      }
+
+      function syncDraftFromForm() {
+        const bot = getActiveBot();
+        if (!bot || !bot.__isDraft) return;
+
+        const v = collectFormValues();
+
+        bot.values = Object.assign({}, bot.values || {}, v);
+        bot.label = v.projectName || v.botName || v.companyName || bot.label || "Neuer Chatbot (Entwurf)";
+
+        // Draft-Store aktualisieren
+        window.__SF_DRAFT__ = Object.assign({}, window.__SF_DRAFT__ || {}, bot);
+
+        saveUI();
+      }
+
+
+
+      function installDragGuard(container) {
+        let downX = 0, downY = 0, moved = false;
+        container.addEventListener("pointerdown", (e) => {
+          downX = e.clientX; downY = e.clientY; moved = false;
+        }, { passive: true });
+        container.addEventListener("pointermove", (e) => {
+          if (!downX && !downY) return;
+          const dx = Math.abs(e.clientX - downX);
+          const dy = Math.abs(e.clientY - downY);
+          if (dx > 6 && dx > dy) moved = true;
+        }, { passive: true });
+        container.addEventListener("click", (e) => {
+          if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; }
+        }, true);
+      }
+      installDragGuard(botTabsEl);
+
+      function renderBotTabs() {
+        botTabsEl.innerHTML = "";
+
+        function createTab(index, extraClass) {
+          const bot = bots[index];
+          const v = bot.values || {};
+          // ✅ Tabs nutzen IMMER das echte Tenant-Avatar (damit es sicher stimmt)
+          let avatar = DEFAULT_AVATAR_URL;
+
+          if (bot.tenantId) {
+            // cache-bust über avatarV (falls vorhanden) sonst timestamp
+            const vKey = (v.avatarV ? String(v.avatarV) : String(Date.now()));
+            avatar = WORKER_BASE_URL + "/avatar/" + encodeURIComponent(bot.tenantId) + "?v=" + encodeURIComponent(vKey);
+          } else if (v.avatarUrl && String(v.avatarUrl).trim()) {
+            // Draft ohne tenantId: fallback auf avatarUrl
+            avatar = String(v.avatarUrl).trim();
+            if (avatar.startsWith("/")) avatar = WORKER_BASE_URL + avatar;
+          }
+          const nameFromForm = (v.botName && String(v.botName).trim()) ? String(v.botName).trim() : "";
+          const label = nameFromForm || bot.label || ("Chatbot " + (index + 1));
+
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "bot-tab" + (index === activeBotIndex ? " active" : "") + (extraClass ? (" " + extraClass) : "");
+
+          const thumb = document.createElement("span");
+          thumb.className = "thumb";
+          const img = document.createElement("img");
+          img.src = avatar;
+          img.alt = label;
+          img.loading = "lazy";
+          thumb.appendChild(img);
+
+          const text = document.createElement("span");
+          text.className = "label";
+          text.textContent = label;
+
+          btn.appendChild(thumb);
+          btn.appendChild(text);
+
+          btn.addEventListener("click", async () => {
+            // wenn aktueller tab der draft ist -> draft in local halten
+            syncActiveBotFromForm();
+
+
+            activeBotIndex = index;
+            saveUI();
+
+            renderBotTabs();
+            loadBotIntoForm(getActiveBot());
+            setStatus("Chatbot \"" + label + "\" geladen.", "");
+
+            scrollItemIntoView(botTabsEl, btn);
+            await refreshAnalyticsForActiveBot();
+          });
+
+          botTabsEl.appendChild(btn);
+        }
+
+        // saved bots first
+        bots.forEach((b, i) => {
+          if (!b.__isDraft) createTab(i, "");
+        });
+
+        // draft only if active
+        const draftIndex = bots.findIndex(b => b && b.__isDraft);
+        if (draftIndex !== -1 && activeBotIndex === draftIndex) {
+          createTab(draftIndex, "draft");
+        }
+
+        const addBtn = document.createElement("button");
+        addBtn.type = "button";
+        addBtn.className = "bot-tab add";
+        addBtn.innerHTML = '<span class="plus">+</span> Neuer Chatbot';
+        addBtn.addEventListener("click", async () => {
+
+          // --- NEU: Limit Check beim Klicken auf "+ Neuer Chatbot" ---
+          let maxBots = 1;
+          if (currentUserPlan === "pro") maxBots = 1;
+          if (currentUserPlan === "unlimited") maxBots = 10;
+          if (currentUserPlan === "admin") maxBots = 9999;
+
+          // Zähle nur gespeicherte Bots (keine Entwürfe)
+          const savedBotsCount = bots.filter(b => !b.__isDraft).length;
+
+          if (savedBotsCount >= maxBots) {
+            setStatus(`Limit erreicht: Im ${currentUserPlan.toUpperCase()}-Plan sind max. ${maxBots} Projekt(e) erlaubt.`, "error");
+            alert(`Dein Limit von ${maxBots} Projekt(en) ist erreicht!\n\nUm weitere Chatbots/Websites anzulegen, benötigst du den Unlimited-Plan.`);
+            return; // ❌ Bricht ab, öffnet keinen neuen Entwurf!
+          }
+          // -------------------------------------------------------------
+
+          // current draft sync
+          const current = getActiveBot();
+          if (current && current.__isDraft) syncDraftFromForm();
+          else if (current) syncActiveBotFromForm();
+
+          // if draft exists -> go to it
+          const existingDraftIndex = bots.findIndex(b => b && b.__isDraft);
+          if (existingDraftIndex !== -1) {
+            activeBotIndex = existingDraftIndex;
+            saveUI();
+            renderBotTabs();
+            loadBotIntoForm(getActiveBot());
+            setStep(0);
+            setStatus("Entwurf geladen. Bitte Daten ausfüllen und speichern.", "ok");
+            await refreshAnalyticsForActiveBot();
+            return;
+          }
+
+          const draft = ensureDraft();
+          bots.push(Object.assign({ __isDraft: true }, draft));
+          activeBotIndex = bots.length - 1;
+          saveUI();
+          renderBotTabs();
+          loadBotIntoForm(getActiveBot());
+          setStep(0);
+          setStatus("Neuer Chatbot-Entwurf angelegt. Fülle jetzt die Daten aus und speichere.", "ok");
+          await refreshAnalyticsForActiveBot();
+        });
+
+        botTabsEl.appendChild(addBtn);
+
+        requestAnimationFrame(() => {
+          const active = botTabsEl.querySelector(".bot-tab.active");
+          if (active) scrollItemIntoView(botTabsEl, active);
+        });
+      }
+
+      function updatePreviewIframe(tenantId) {
+        if (!tenantId) return;
+        const src = WORKER_BASE_URL + "/widget.html?tenantId=" + encodeURIComponent(tenantId);
+
+        iframePreviewEl.innerHTML = "";
+
+        const loader = document.createElement("div");
+        loader.className = "preview-loading";
+        loader.innerHTML = '<div class="preview-spinner"></div><div>Vorschau wird geladen …</div>';
+        iframePreviewEl.appendChild(loader);
+
+        const iframe = document.createElement("iframe");
+        iframe.src = src + (src.includes("?") ? "&" : "?") + "_=" + Date.now();
+        iframe.setAttribute("loading", "lazy");
+        iframe.style.opacity = "0";
+
+        iframe.addEventListener("load", () => {
+          loader.remove();
+          iframe.style.opacity = "1";
+        });
+
+        iframePreviewEl.appendChild(iframe);
+      }
+
+      // Live-Sync (Draft lokal, Saved-Bot auch updaten)
+      ["projectName", "companyName", "botName", "avatarUrl", "googleAnalyticsId"].forEach(id => {
+        const el = $(id);
+        if (!el) return;
+
+        const handler = () => {
+          refreshAvatarPreview();
+          const b = getActiveBot();
+          if (b && b.__isDraft) syncDraftFromForm();
+          else if (b) syncActiveBotFromForm();
+        };
+
+        el.addEventListener("input", handler);
+        el.addEventListener("change", handler);
+      });
+
+      if (trackingToggle) {
+        trackingToggle.addEventListener("change", () => {
+          const b = getActiveBot();
+          if (b && b.__isDraft) syncDraftFromForm();
+          else if (b) syncActiveBotFromForm();
+        });
+      }
+
+      const cookieToggleEl = document.getElementById("cookieBannerEnabled");
+      if (cookieToggleEl) {
+        cookieToggleEl.addEventListener("change", () => {
+          toggleCookieFields();
+          const b = getActiveBot();
+          if (b && b.__isDraft) syncDraftFromForm();
+          else if (b) syncActiveBotFromForm();
+        });
+      }
+
+      const chatEnabledEl = document.getElementById("chatEnabled");
+      if (chatEnabledEl) {
+        chatEnabledEl.addEventListener("change", () => {
+          const b = getActiveBot();
+          if (b && b.__isDraft) syncDraftFromForm();
+          else if (b) syncActiveBotFromForm();
+
+          if (b) loadBotIntoForm(b);
+        });
+      }
+
+
+      /* ========================= Analytics logic ========================= */
+
+      function humanRangeLabel(r) {
+        if (r === "day") return "Tag";
+        if (r === "week") return "Woche";
+        if (r === "month") return "Monat";
+        if (r === "year") return "Jahr";
+        if (r === "max") return "Max";
+        return r;
+      }
+
+      function setActiveRangeUI(range) {
+        activeRange = range;
+        rangePillText.textContent = humanRangeLabel(range);
+        Array.from(rangeSeg.querySelectorAll("button")).forEach(b => {
+          b.classList.toggle("active", b.getAttribute("data-range") === range);
+        });
+        saveUI();
+      }
+
+      function sumViews(rows) {
+        return (rows || []).reduce((acc, r) => acc + (Number(r.views) || 0), 0);
+      }
+
+      function utcDayKey(ts) {
+        const d = new Date(ts);
+        const y = d.getUTCFullYear();
+        const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+        const dd = String(d.getUTCDate()).padStart(2, "0");
+        return `${y}-${m}-${dd}`;
+      }
+
+      function normalizeTrendLabels(dailyRows, valueKey = "views") {
+        const rows = (dailyRows || []).slice();
+
+        // Worker kann "day" oder "label" liefern
+        const keyOf = (r) => String((r && (r.hour || r.day || r.label || r.ts)) || "");
+
+        rows.sort((a, b) => keyOf(a).localeCompare(keyOf(b)));
+
+        const labels = rows.map(r => keyOf(r));
+        const values = rows.map(r => Number(r[valueKey]) || 0);
+
+        return { labels, values };
+      }
+
+      function destroyCharts() {
+        if (chartTrend) { chartTrend.destroy(); chartTrend = null; }
+        if (chartRef) { chartRef.destroy(); chartRef = null; }
+      }
+
+      // -------------------------------------------------------
+      // Chart Helpers
+      // -------------------------------------------------------
+
+      function getCommonChartOptions(labels) {
+        return {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              mode: "index",
+              intersect: false,
+              callbacks: {
+                title: function (context) {
+                  // Tooltip-Title schön formatieren
+                  const label = context[0].label;
+                  return label;
+                }
+              }
+            }
+          },
+          interaction: { mode: "index", intersect: false },
+          scales: {
+            x: {
+              ticks: {
+                color: "rgba(156,163,175,0.9)",
+                maxRotation: 0,
+                autoSkip: true,
+                maxTicksLimit: 8, // Nicht zu viele Labels
+                callback: function (value, index) {
+                  const label = (this.getLabelForValue ? this.getLabelForValue(value) : (labels[index] || ""));
+                  const s = String(label);
+
+                  // 1) Hour: "2024-02-16 14:00" -> "14:00 Uhr"
+                  if (s.match(/\d{2}:\d{2}/)) {
+                    const m = s.match(/(\d{2}:\d{2})/);
+                    return m ? m[1] + " Uhr" : s;
+                  }
+
+                  // 2) Date: "2024-02-16" -> "16.02." (Day.Month)
+                  if (s.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    const parts = s.split("-"); // [YYYY, MM, DD]
+                    return parts[2] + "." + parts[1] + ".";
+                  }
+
+                  // 3) Month: "2024-02" -> "Feb"
+                  if (s.match(/^\d{4}-\d{2}$/)) {
+                    const parts = s.split("-");
+                    const monthIndex = parseInt(parts[1], 10) - 1;
+                    const d = new Date(2000, monthIndex, 1);
+                    return d.toLocaleDateString("de-DE", { month: "short" });
+                  }
+
+                  return s;
+                }
+              },
+              grid: { color: "rgba(148,163,184,0.08)" }
+            },
+            y: {
+              ticks: { color: "rgba(156,163,175,0.9)", maxTicksLimit: 5 },
+              grid: { color: "rgba(148,163,184,0.08)" },
+              beginAtZero: true
+            }
+          }
+        };
+      }
+
+      function createChatChart(labels, values) {
+        const ctx = document.getElementById("chart-ref");
+        if (!ctx) return;
+
+        const wrapper = document.getElementById("ref-inner-wrapper");
+        if (wrapper && labels && labels.length) {
+          const minWidth = Math.max(labels.length * 35, wrapper.parentElement.clientWidth);
+          wrapper.style.minWidth = minWidth + "px";
+        }
+
+        chartRef = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels,
+            datasets: [{
+              label: "Bot Antworten",
+              data: values,
+              tension: 0.3,
+              pointRadius: 3,
+              pointHoverRadius: 5,
+              borderWidth: 2,
+              fill: true,
+              borderColor: '#f43f5e',
+              backgroundColor: 'rgba(244, 63, 94, 0.1)'
+            }]
+          },
+          options: getCommonChartOptions(labels)
+        });
+      }
+
+      function createTrendChart(labels, values) {
+        const ctx = document.getElementById("chart-trend");
+        if (!ctx) return;
+
+        const wrapper = document.getElementById("trend-inner-wrapper");
+        if (wrapper && labels && labels.length) {
+          const minWidth = Math.max(labels.length * 35, wrapper.parentElement.clientWidth);
+          wrapper.style.minWidth = minWidth + "px";
+        }
+
+        chartTrend = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels,
+            datasets: [{
+              label: "Aufrufe",
+              data: values,
+              tension: 0.3,
+              pointRadius: 3,        // Visible points for sparse data
+              pointHoverRadius: 5,
+              borderWidth: 2,
+              fill: true,
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              borderColor: '#3b82f6'
+            }]
+          },
+          options: getCommonChartOptions(labels)
+        });
+      }
+
+
+
+      function createRefChart(domains, counts) {
+        const ctx = document.getElementById("chart-ref");
+        if (!ctx) return;
+
+        chartRef = new Chart(ctx, {
+          type: "doughnut",
+          data: {
+            labels: domains,
+            datasets: [{
+              data: counts,
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: { color: "rgba(229,231,235,0.85)", boxWidth: 10, boxHeight: 10, padding: 12 }
+              }
+            },
+            cutout: "62%"
+          }
+        });
+      }
+
+      function renderRows(container, rows, type, query) {
+        const q = (query || "").trim().toLowerCase();
+        const items = (rows || []).filter(r => {
+          const s = (type === "page" ? String(r.path || "") : formatRefDomain(r)).toLowerCase();
+          return !q || s.includes(q);
+        }).slice(0, 30);
+
+        if (!items.length) {
+          container.innerHTML = '<div class="row"><div class="left"><div class="main">– keine Treffer –</div><div class="sub">Ändere die Suche oder warte auf Daten</div></div><div class="right"><span class="chip">0</span></div></div>';
+          return;
+        }
+
+        container.innerHTML = items.map(r => {
+          const main = type === "page" ? formatLandingDisplay(r.path || "/") : formatRefDomain(r);
+          const sub = type === "page" ? "Landingpage / URL-Pfad" : "Referrer Domain";
+          const views = Number(r.views) || 0;
+          return `
+        <div class="row">
+          <div class="left">
+            <div class="main">${escapeHtml(main)}</div>
+            <div class="sub">${sub}</div>
+          </div>
+          <div class="right">
+            <span class="chip">${views} Views</span>
+          </div>
+        </div>
+      `;
+        }).join("");
+      }
+
+      async function fetchStats(tenantId, range) {
+        const url =
+          WORKER_BASE_URL +
+          "/stats?tenantId=" + encodeURIComponent(tenantId);
+        // range entfernt, da Backend statisch
+
+        async function readJsonSafe(res) {
+          const text = await res.text().catch(() => "");
+          try { return text ? JSON.parse(text) : {}; }
+          catch { return { ok: false, error: "invalid_json", raw: text }; }
+        }
+
+        // 1) Versuch OHNE Auth (so wie es vorher bei dir zumindest teils ging)
+        try {
+          const res1 = await Promise.race([
+            fetch(url, { method: "GET", cache: "no-store" }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error("timeout_noauth_8s")), 8000))
+          ]);
+
+          const data1 = await readJsonSafe(res1);
+
+          // ✅ wenn ok -> direkt zurück
+          if (res1.ok && data1 && data1.ok) return data1;
+
+          // wenn der Worker hier schon eine sinnvolle Fehlermeldung liefert -> merken
+          // aber NICHT sofort abbrechen, weil wir noch Auth probieren
+          console.warn("stats_noauth_failed", res1.status, data1);
+        } catch (e) {
+          console.warn("stats_noauth_error", e);
+        }
+
+        // 2) Versuch MIT Auth (Bearer Token)
+        const path =
+          "/stats?tenantId=" + encodeURIComponent(tenantId);
+
+        const { res, data } = await Promise.race([
+          apiFetch(path, { method: "GET", cache: "no-store" }),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("timeout_auth_8s")), 8000)
+          )
+        ]);
+
+        // ✅ wenn ok -> zurück
+        if (res.ok && data && data.ok) return data;
+
+        // ❌ ansonsten: sehr genauer Fehlertext
+        const details = (data && (data.details || data.error)) ? (data.details || data.error) : null;
+        throw new Error(
+          "stats_failed (" + res.status + ")" +
+          (details ? (": " + String(details)) : "") +
+          (data && data.raw ? (": " + String(data.raw).slice(0, 300)) : "")
+        );
+      }
+
+      function formatRefDomain(r) {
+        if (!r) return "–";
+        return String(
+          r.domain || r.referrer || r.source || r.host || r.name || "(direct)"
+        );
+      }
+
+
+      function updateAnalyticsUI(data) {
+        lastStats = data;
+
+        const daily = data.daily || [];
+        const topPages = data.topPages || [];
+        const topRefs =
+          Array.isArray(data.topReferrers) ? data.topReferrers :
+            Array.isArray(data.topSources) ? data.topSources.map(r => ({
+              domain: r.domain || r.source || "(unknown)",
+              views: Number(r.views ?? r.sessions ?? 0)
+            })) :
+              Array.isArray(data.referrers) ? data.referrers :
+                [];
+
+        const total = sumViews(daily);
+
+        const { labels, values } = normalizeTrendLabels(daily);
+
+        const todayKey = utcDayKey(Date.now());
+        const yesterdayKey = utcDayKey(Date.now() - 86400000);
+
+        const getDay = (r) => String((r && (r.day || r.label)) || "");
+
+        const todayRow = daily.find(r => getDay(r) === todayKey);
+        const yesterdayRow = daily.find(r => getDay(r) === yesterdayKey);
+
+        const todayViews = todayRow ? (Number(todayRow.views) || 0) : 0;
+        const yViews = yesterdayRow ? (Number(yesterdayRow.views) || 0) : 0;
+
+        const avg = daily.length ? Math.round(total / daily.length) : 0;
+
+        const topPage = topPages[0] || null;
+        const topRef = topRefs[0] || null;
+
+        mViews.textContent = String(total);
+        mViewsSub.textContent = avg ? ("Ø " + avg + "/Tag") : "–";
+        mToday.textContent = String(todayViews);
+        mYesterday.textContent = "Gestern: " + String(yViews);
+
+        const topLandingDisplay =
+          (data && data.kpis && data.kpis.topLandingDisplay)
+            ? String(data.kpis.topLandingDisplay)
+            : (topPage ? formatLandingDisplay(topPage.path) : "–");
+
+        mTopPage.textContent = topLandingDisplay;
+
+        mTopPageSub.textContent = topPage ? (String(topPage.views) + " Aufrufe") : "–";
+        mTopRef.textContent = topRef ? formatRefDomain(topRef) : "–";
+        mTopRefSub.textContent = topRef ? (String(topRef.views) + " Aufrufe") : "–";
+
+
+        destroyCharts();
+        createTrendChart(labels, values);
+
+        // --- Chat Stats (Chart + Top-Right Badge) ---
+        // Erwartet 'chatDaily' vom Worker (oder Fallback)
+        const chatDaily = data.chatDaily || [];
+        const botDaily = chatDaily.filter(x => x.role === 'assistant');
+        const botTrend = normalizeTrendLabels(botDaily, "count");
+
+        // Gesamt-Anzahl berechnen (Badge oben rechts soll NUR Bot-Nachrichten zeigen "Nachrichten")
+        // Wir nehmen chatStats (nur assistant)
+        const chatStats = data.chatStats || [];
+        const totalBotMsgs = chatStats
+          .filter(x => x.role === 'assistant')
+          .reduce((a, b) => a + (Number(b.count) || 0), 0);
+
+        // Badge updaten
+        const badge = document.getElementById("chat-total-badge");
+        if (badge) badge.textContent = totalBotMsgs;
+
+        // Chart zeichnen (weiterhin nur Bot-Antworten als Kurve)
+        createChatChart(botTrend.labels, botTrend.values);
+
+
+        renderRows(listPages, topPages, "page", searchPages.value);
+        renderRows(listRefs, topRefs, "ref", searchRefs.value);
+
+        const hasAny = total > 0 || topPages.length > 0 || topRefs.length > 0;
+        analyticsEmpty.classList.toggle("hidden", hasAny);
+        analyticsBody.classList.toggle("hidden", !hasAny);
+      }
+
+      async function refreshAnalyticsForActiveBot() {
+        const bot = getActiveBot();
+        const tenantId = bot && bot.tenantId ? bot.tenantId : "";
+
+        // Kein tenantId => nichts laden
+        if (!tenantId) {
+          analyticsSub.textContent = "Wähle einen gespeicherten Chatbot aus, um Statistiken zu sehen.";
+          analyticsEmpty.classList.remove("hidden");
+          analyticsBody.classList.add("hidden");
+          destroyCharts();
+          return;
+        }
+
+        // UI auf Loading
+        const loadingText = "Lade Daten …";
+        analyticsSub.textContent = loadingText;
+
+        // ✅ HARD STOP: Nach 9 Sekunden Loading-Text entfernen / Fehlermeldung anzeigen
+        let killedByTimeout = false;
+        const hardUiTimer = setTimeout(() => {
+          killedByTimeout = true;
+          analyticsSub.textContent = "Analytics Fehler: Timeout – /stats antwortet nicht (oder hängt).";
+          analyticsEmpty.classList.remove("hidden");
+          analyticsBody.classList.add("hidden");
+          destroyCharts();
+        }, 9000);
+
+        try {
+          const data = await fetchStats(tenantId, activeRange);
+
+          // Falls Timeout-UI schon zugeschlagen hat, nicht mehr überschreiben
+          if (killedByTimeout) return;
+
+          analyticsSub.textContent =
+            "Übersicht („" + (bot.values?.companyName || bot.label || "Website") + "“)";
+
+          updateAnalyticsUI(data);
+        } catch (e) {
+          if (killedByTimeout) return;
+          console.error("analytics_load_failed", e);
+          analyticsSub.textContent = "Analytics Fehler: " + (e && e.message ? e.message : "Unbekannt");
+          analyticsEmpty.classList.remove("hidden");
+          analyticsBody.classList.add("hidden");
+          destroyCharts();
+        } finally {
+          clearTimeout(hardUiTimer);
+        }
+      }
+
+
+      rangeSeg.addEventListener("click", async (e) => {
+        const btn = e.target.closest("button[data-range]");
+        if (!btn) return;
+        const range = btn.getAttribute("data-range");
+        setActiveRangeUI(range);
+        await refreshAnalyticsForActiveBot();
+      });
+
+      btnRefreshAnalytics.addEventListener("click", async () => {
+        await refreshAnalyticsForActiveBot();
+      });
+
+
+      async function sendTestTrackingEvent(tenantId) {
+        const payload = {
+          tenantId,
+          path: "/__dashboard_test__",
+          referrer: "dashboard",
+          ts: Date.now()
+        };
+
+        const res = await fetch(WORKER_BASE_URL + "/collect", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        // viele Implementationen antworten 204 (ok ohne body)
+        if (!(res.status === 204 || res.ok)) {
+          const t = await res.text().catch(() => "");
+          throw new Error("collect failed: " + res.status + " " + t);
+        }
+      }
+
+      if (btnTestTracking) {
+        btnTestTracking.addEventListener("click", async () => {
+          const bot = getActiveBot();
+          const tenantId = bot && bot.tenantId ? bot.tenantId : "";
+          if (!tenantId) return setStatus("Bitte erst einen gespeicherten Bot auswählen (mit tenantId).", "error");
+
+          try {
+            setStatus("Sende Tracking-Testevent …", "");
+            await sendTestTrackingEvent(tenantId);
+            setStatus("Tracking-Testevent gesendet. Lade Analytics …", "ok");
+            await refreshAnalyticsForActiveBot();
+          } catch (e) {
+            console.error(e);
+            setStatus("Tracking-Test fehlgeschlagen: " + (e.message || "Unbekannt"), "error");
+          }
+        });
+      }
+
+
+      searchPages.addEventListener("input", () => {
+        if (!lastStats) return;
+        renderRows(listPages, lastStats.topPages || [], "page", searchPages.value);
+      });
+      searchRefs.addEventListener("input", () => {
+        if (!lastStats) return;
+        renderRows(listRefs, lastStats.topReferrers || [], "ref", searchRefs.value);
+      });
+
+      /* ========================= Upload handlers ========================= */
+
+      async function deleteAsset(endpointPath, tenantId) {
+        if (!tenantId) throw new Error("tenantId fehlt.");
+        const res = await fetch(WORKER_BASE_URL + endpointPath + "?tenantId=" + encodeURIComponent(tenantId), { method: "POST" });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data || !data.ok) {
+          throw new Error((data && (data.error || data.details)) ? String(data.error || data.details) : ("Löschen fehlgeschlagen. (" + res.status + ")"));
+        }
+        return data;
+      }
+
+      async function uploadImageToWorker(file, endpointPath, tenantId, maxMB) {
+        if (!file) return null;
+        if (!file.type || !file.type.startsWith("image/")) throw new Error("Nur Bilddateien sind erlaubt.");
+        const sizeMB = bytesToMB(file.size);
+        if (sizeMB > maxMB) throw new Error(`Datei ist ${sizeMB} MB groß (max. ${maxMB} MB erlaubt).`);
+        if (!tenantId) throw new Error("Bitte zuerst speichern, damit eine tenantId existiert.");
+
+        const fd = new FormData();
+        fd.append("file", file);
+
+        const res = await fetch(WORKER_BASE_URL + endpointPath + "?tenantId=" + encodeURIComponent(tenantId), { method: "POST", body: fd });
+        if (res.status === 409) throw new Error("Bitte erst das aktuelle Bild löschen (×), dann kannst du ein neues hochladen.");
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data || !data.ok) {
+          const msg = (data && (data.error || data.details)) ? String(data.error || data.details) : ("Upload fehlgeschlagen. (" + res.status + ")");
+          throw new Error(msg);
+        }
+        return data.avatarUrl || data.logoUrl || "";
+      }
+
+      if (logoFileInput) {
+        logoFileInput.addEventListener("change", async (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          try {
+            const bot = getActiveBot();
+            if (!bot || !bot.tenantId) throw new Error("Bitte zuerst speichern (Tenant erstellen), dann Logo hochladen.");
+
+            setStatus("Logo wird hochgeladen …");
+            const url = await uploadImageToWorker(file, "/upload-logo", bot.tenantId, MAX_LOGO_MB);
+            const logoV = String(Date.now());
+            bot.values = bot.values || {};
+            bot.values.logoV = logoV;
+
+            let absUrl = url;
+            if (absUrl && absUrl.startsWith("/")) absUrl = WORKER_BASE_URL + absUrl;
+
+            const cacheBust = "?v=" + logoV;
+            if (absUrl.includes("?")) {
+              absUrl = absUrl.split("?")[0] + cacheBust;
+            } else {
+              absUrl = absUrl + cacheBust;
+            }
+
+            $("logoUrl").value = absUrl;
+            refreshLogoPreview();
+
+            bot.values.logoUrl = absUrl;
+
+            // optional: direkt speichern (nur wenn saved bot)
+            if (!bot.__isDraft && bot.id) {
+              await saveBotToServer(bot);
+            } else if (bot.__isDraft) {
+              syncDraftFromForm();
+            }
+
+            setStatus("Logo erfolgreich hochgeladen.", "ok");
+          } catch (err) {
+            console.error(err);
+            setStatus(err.message || "Logo-Upload fehlgeschlagen.", "error");
+            e.target.value = "";
+          }
+        });
+      }
+
+      if (avatarFileInput) {
+        avatarFileInput.addEventListener("change", async (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          try {
+            const bot = getActiveBot();
+            if (!bot || !bot.tenantId) throw new Error("Bitte zuerst speichern (Tenant erstellen), dann Avatar hochladen.");
+
+            setStatus("Avatar wird hochgeladen …");
+            const url = await uploadImageToWorker(file, "/upload-avatar", bot.tenantId, MAX_AVATAR_MB);
+            const avatarV = String(Date.now());
+            bot.values = bot.values || {};
+            bot.values.avatarV = avatarV;
+
+            // url ggf. absolut machen
+            let absUrl = url;
+            if (absUrl && absUrl.startsWith("/")) absUrl = WORKER_BASE_URL + absUrl;
+
+            // FIX: Append avatarV to absUrl to force cache break inside Chatbot Iframe Widget!
+            const cacheBust = "?v=" + avatarV;
+            if (absUrl.includes("?")) {
+              absUrl = absUrl.split("?")[0] + cacheBust;
+            } else {
+              absUrl = absUrl + cacheBust;
+            }
+
+            $("avatarUrl").value = absUrl;
+            refreshAvatarPreview();
+
+            bot.values.avatarUrl = absUrl;
+
+            renderBotTabs();
+
+
+            if (!bot.__isDraft && bot.id) {
+              await saveBotToServer(bot);
+            } else if (bot.__isDraft) {
+              syncDraftFromForm();
+            }
+
+            // --- NEU: Vorschau sofort neu laden ---
+            if (bot.tenantId) {
+              updatePreviewIframe(bot.tenantId);
+            }
+            // --------------------------------------
+
+            setStatus("Avatar erfolgreich hochgeladen.", "ok");
+          } catch (err) {
+            console.error(err);
+            setStatus(err.message || "Avatar-Upload fehlgeschlagen.", "error");
+            e.target.value = "";
+          }
+        });
+      }
+
+
+
+      const avatarClearBtn = $("avatarClear");
+      if (avatarClearBtn) {
+        avatarClearBtn.addEventListener("click", async () => {
+          try {
+            const bot = getActiveBot() || {};
+            if (!bot.tenantId) throw new Error("Bitte zuerst speichern.");
+            setStatus("Avatar wird entfernt …");
+            await deleteAsset("/delete-avatar", bot.tenantId);
+
+            // wieder auf Standard
+            $("avatarUrl").value = DEFAULT_AVATAR_URL;
+            refreshAvatarPreview();
+
+            bot.values = bot.values || {};
+            bot.values = bot.values || {};
+            bot.values = bot.values || {};
+            bot.values.avatarUrl = DEFAULT_AVATAR_URL;
+            bot.values.avatarV = String(Date.now());
+            renderBotTabs();
+
+
+
+            if (!bot.__isDraft && bot.id) {
+              await saveBotToServer(bot);
+            } else if (bot.__isDraft) {
+              syncDraftFromForm();
+            }
+
+            if (bot.tenantId) updatePreviewIframe(bot.tenantId);
+            setStatus("Avatar entfernt (Standard aktiv).", "ok");
+          } catch (err) {
+            console.error(err);
+            setStatus(err.message || "Avatar entfernen fehlgeschlagen.", "error");
+          }
+        });
+      }
+
+
+      const logoClearBtn = $("logoClear");
+      if (logoClearBtn) {
+        logoClearBtn.addEventListener("click", async () => {
+          try {
+            const bot = getActiveBot() || {};
+            if (!bot.tenantId) throw new Error("Bitte zuerst speichern.");
+            setStatus("Logo wird entfernt …");
+            await deleteAsset("/delete-logo", bot.tenantId);
+
+            $("logoUrl").value = "";
+            refreshLogoPreview();
+
+            bot.values = bot.values || {};
+            bot.values.logoUrl = "";
+
+            if (!bot.__isDraft && bot.id) {
+              await saveBotToServer(bot);
+            } else if (bot.__isDraft) {
+              syncDraftFromForm();
+            }
+
+            if (bot.tenantId) updatePreviewIframe(bot.tenantId);
+            setStatus("Logo entfernt.", "ok");
+          } catch (err) {
+            console.error(err);
+            setStatus(err.message || "Logo entfernen fehlgeschlagen.", "error");
+          }
+        });
+      }
+
+      if (btnDelete) {
+        btnDelete.addEventListener("click", async () => {
+          const bot = getActiveBot();
+          if (!bot || bot.__isDraft || !bot.id) return;
+
+          // Sicherheitsabfrage
+          if (!confirm(`Möchtest du den Chatbot "${bot.label}" wirklich unwiderruflich löschen?`)) {
+            return;
+          }
+
+          setStatus("Chatbot wird gelöscht …", "");
+          btnDelete.disabled = true;
+          btnDelete.innerHTML = '<span class="icon">⏳</span> Lösche …';
+
+          try {
+            // API-Call an deinen Worker
+            const { res, data } = await apiFetch("/bots", {
+              method: "DELETE",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ id: bot.id })
+            });
+
+            if (!res.ok || !data || !data.ok) {
+              throw new Error((data && data.error) ? data.error : "Löschen fehlgeschlagen");
+            }
+
+            setStatus(`Chatbot "${bot.label}" wurde erfolgreich gelöscht.`, "ok");
+
+            // Bot aus der lokalen Liste entfernen
+            bots = bots.filter(b => b.id !== bot.id);
+
+            // Wenn kein Bot mehr da ist, einen neuen leeren Entwurf anlegen
+            if (bots.length === 0) {
+              const draft = ensureDraft();
+              bots.push(Object.assign({ __isDraft: true }, draft));
+            }
+
+            // UI aktualisieren (auf den ersten verbleibenden Bot springen)
+            activeBotIndex = 0;
+            saveUI();
+            renderBotTabs();
+            loadBotIntoForm(getActiveBot());
+            setStep(0);
+            await refreshAnalyticsForActiveBot();
+
+          } catch (err) {
+            console.error("delete_bot_error", err);
+            setStatus("Fehler beim Löschen: " + err.message, "error");
+          } finally {
+            btnDelete.disabled = false;
+            btnDelete.innerHTML = '<span class="icon">🗑️</span> Löschen';
+          }
+        });
+      }
+
+      /* ========================= Form submit (/register + /bots save) ========================= */
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        if (!$("companyName").value.trim()) {
+          setStep(0);
+          $("companyName").focus();
+          return setStatus("Bitte gib den Firmennamen an.", "error");
+        }
+        if (!$("notifyEmail").value.trim()) {
+          setStep(1);
+          $("notifyEmail").focus();
+          return setStatus("Bitte gib die E-Mail für Anfragen an.", "error");
+        }
+
+        setStatus("Speichere & lasse die KI dein Profil generieren …", "");
+        btnSave.disabled = true;
+        btnSave.innerHTML = '<span class="icon">⏳</span> Wird gespeichert …';
+
+        const values = collectFormValues();
+        const activeBot = getActiveBot() || {};
+        const existingTenantId = activeBot.tenantId || null;
+
+        const payload = {
+          companyName: values.companyName,
+          industry: values.industry,
+          language: values.language,
+          websiteUrl: values.websiteUrl,
+          notifyName: values.notifyName,
+          notifyEmail: values.notifyEmail,
+          publicEmail: values.publicEmail,
+          phone: values.phone,
+          logoUrl: values.logoUrl,
+          openingHours: values.openingHours,
+          address: {
+            street: values.street,
+            postalCode: (function () {
+              const v = values.postalCode;
+              const parts = v.split(" ");
+              return parts[0] || "";
+            })(),
+            city: (function () {
+              const v = values.postalCode;
+              const parts = v.split(" ");
+              return parts.slice(1).join(" ") || "";
+            })(),
+            country: values.country
+          },
+          botName: values.botName,
+          avatarUrl: values.avatarUrl || DEFAULT_AVATAR_URL,
+          socialLinks: {
+            facebook: values.facebook,
+            instagram: values.instagram,
+            tiktok: values.tiktok,
+            youtube: values.youtube,
+            linkedin: values.linkedin,
+            x: values.x,
+            other: values.otherSocial
+          },
+          knowledgeText: values.knowledgeText,
+          chatEnabled: values.chatEnabled,
+          trackingEnabled: !!values.trackingEnabled,
+          cookieBannerEnabled: values.cookieBannerEnabled,
+          googleAnalyticsId: values.googleAnalyticsId,
+          metaPixelId: values.metaPixelId,
+
+          // --- NEU HINZUFÜGEN: ---
+          botModules: values.botModules,
+          productLinks: values.productLinks,
+          roomCategories: values.roomCategories,
+          mapsUrl: values.mapsUrl || "",
+          areaServed: values.areaServed || []
+        };
+
+        // ✅ Nur updaten, wenn es ein gespeicherter Bot ist (kein Draft)
+        if (existingTenantId && !activeBot.__isDraft) {
+          payload.tenantId = existingTenantId;
+        }
+
+
+        try {
+          // 1) Tenant speichern / generieren (AUTH + no-store)
+          const { res, data } = await apiFetch("/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+            cache: "no-store"
+          });
+
+          if (!res.ok || !data || !data.ok) {
+            throw new Error((data && data.error) ? data.error : ("Unbekannter Fehler (" + res.status + ")"));
+          }
+
+          const tenantId = data.tenantId;
+
+          // ✅ NEU: Worker liefert jetzt embedCode (fallback auf iframeCode falls noch alt)
+          const iframeCode = (data.embedCode || data.iframeCode || "").trim();
+
+          iframeCodeEl.value = iframeCode;
+          updatePreviewIframe(tenantId);
+
+          previewLabel.textContent = "Aktiver Chatbot für „" + (values.companyName || activeBot.label || "dein Unternehmen") + "“";
+
+          // 2) Bot-Objekt updaten
+          const botToSave = Object.assign({}, activeBot);
+          botToSave.tenantId = tenantId;
+          botToSave.iframeCode = iframeCode;
+          botToSave.values = Object.assign({}, (activeBot.values || {}), values);
+          botToSave.label = values.projectName || values.botName || values.companyName || botToSave.label || "Chatbot";
+
+          // 3) In DB speichern
+          const assignedId = await saveBotToServer(botToSave);
+          botToSave.id = assignedId;
+          botToSave.__isDraft = false;
+
+          // 4) Draft löschen (wenn es einer war)
+          if (activeBot.__isDraft) {
+            window.__SF_DRAFT__ = null;
+          }
+
+          // 5) Liste neu laden, aktiven Bot wieder auswählen
+          const serverBots = await fetchBotsFromServer();
+          bots = serverBots.map(b => Object.assign({}, b, { __isDraft: false }));
+
+          const idx = bots.findIndex(b => b.id === assignedId);
+          activeBotIndex = idx !== -1 ? idx : 0;
+
+          saveUI();
+          renderBotTabs();
+          loadBotIntoForm(getActiveBot());
+
+          setStatus("Erfolgreich gespeichert. Bitte kopiere den Iframe-Code und füge ihn in deine Website ein.", "ok");
+          setStep(3);
+
+          await refreshAnalyticsForActiveBot();
+        } catch (err) {
+          console.error(err);
+          setStatus("Beim Speichern ist ein Fehler aufgetreten. Bitte versuch es später erneut.", "error");
+        } finally {
+          btnSave.disabled = false;
+          btnSave.innerHTML = '<span class="icon">✨</span> Speichern & Iframe erzeugen';
+        }
+      });
+
+      btnCopyIframe.addEventListener("click", async () => {
+        const code = iframeCodeEl.value;
+        if (!code) return setStatus("Es gibt noch keinen Iframe-Code zum Kopieren. Bitte zuerst speichern.", "error");
+        try {
+          await navigator.clipboard.writeText(code);
+          setStatus("Iframe-Code in die Zwischenablage kopiert.", "ok");
+        } catch {
+          setStatus("Konnte den Code nicht kopieren – bitte manuell markieren & kopieren.", "error");
+        }
+      });
+
+      const btnRefresh = document.getElementById("btn-refresh-analytics");
+      if (btnRefresh) {
+        btnRefresh.addEventListener("click", () => {
+          refreshAnalyticsForActiveBot();
+        });
+      }
+
+
+      async function boot() {
+        authStep("Step 1/6: UI laden …");
+        loadUI();
+
+        authStep("Step 2/6: Token prüfen …");
+        const token = getToken();
+        authStep("Token: " + (token ? ("vorhanden (" + token.length + " Zeichen)") : "NICHT vorhanden"));
+
+        authStep("Step 3/6: /auth/me wird geladen …");
+        const user = await getMe();
+        if (!user) {
+          window.location.replace("/index.html");
+          return;
+        }
+        authStep("✅ /auth/me ok: " + (user.email || "user"));
+        window.__SF_CURRENT_USER__ = user;
+
+        // NEU: Plan speichern und Badge anzeigen
+        currentUserPlan = user.planType || (user.isPremium ? "pro" : "free"); // Abwärtskompatibel
+        const planBadge = document.getElementById("account-plan-badge");
+        if (planBadge) {
+          planBadge.style.display = "inline-flex";
+          planBadge.textContent = currentUserPlan;
+          planBadge.className = "plan-badge " + currentUserPlan;
+        }
+
+
+        // Checkout Links mit User-ID versehen (wichtig für den Webhook!)
+        document.querySelectorAll(".btn-buy").forEach(btn => {
+          let url = btn.getAttribute("href");
+          if (url && !url.includes("?")) {
+            btn.setAttribute("href", url + "?checkout[custom][user_id]=" + user.id);
+          }
+        });
+
+        // Lemon Squeezy Overlay initialisieren
+        if (window.createLemonSqueezy) {
+          window.createLemonSqueezy();
+        }
+
+        authStep("Step 4/6: /bots wird geladen …");
+        let serverBots = [];
+        try {
+          serverBots = await fetchBotsFromServer();
+          authStep("✅ /bots ok: " + serverBots.length + " Bots");
+        } catch (e) {
+          authStep("❌ /bots Fehler: " + (e && e.message ? e.message : "unbekannt"));
+          serverBots = [];
+        }
+
+        bots = serverBots.map(b => Object.assign({}, b, { __isDraft: false }));
+
+        authStep("Step 5/6: UI rendern …");
+        const wantedId = window.__SF_ACTIVE_BOT_ID__ || "";
+        if (wantedId) {
+          const idx = bots.findIndex(b => b.id === wantedId);
+          if (idx !== -1) activeBotIndex = idx;
+        }
+
+        if (!bots.length) {
+          const draft = ensureDraft();
+          bots.push(Object.assign({ __isDraft: true }, draft));
+          activeBotIndex = 0;
+        }
+
+        setActiveRangeUI(activeRange);
+        renderBotTabs();
+        loadBotIntoForm(getActiveBot());
+        setStep(0);
+
+        authStep("Step 6/6: Dashboard wird angezeigt …");
+        authBlock.classList.add("hidden");
+        appShell.classList.remove("hidden");
+
+        setTimeout(() => refreshAnalyticsForActiveBot(), 50);
+      }
+
+
+      /* ========================= NEW FULL-SCREEN SETTINGS LOGIC ========================= */
+      document.addEventListener("DOMContentLoaded", () => {
+        const btnSettingsHeader = document.getElementById("btn-settings-header");
+        const fsOverlay = document.getElementById("fullscreen-settings-overlay");
+        const closeFsSettings = document.getElementById("close-fs-settings");
+
+        const fsPlanBadge = document.getElementById("fs-plan-badge");
+        const fsPlanPrice = document.getElementById("fs-plan-price");
+        const fsBtnManageBilling = document.getElementById("fs-btn-manage-billing");
+        const fsPlanActions = document.getElementById("fs-plan-actions");
+        const fsCurrentEmail = document.getElementById("settings-current-email");
+
+        const fsPasswordForm = document.getElementById("fs-password-form");
+        const fsPasswordStatus = document.getElementById("fs-password-status");
+
+        // Lemon Squeezy Links
+        const URL_BUY_PRO = "https://scholz-friese-chatbot.lemonsqueezy.com/checkout/buy/94d5b5a1-2203-4e3d-a30a-d45486a5caaf";
+        const URL_BUY_UNLIMITED = "https://scholz-friese-chatbot.lemonsqueezy.com/checkout/buy/bd8153c4-1c98-43f3-9246-defb0cde75dd";
+
+        if (btnSettingsHeader && fsOverlay) {
+          btnSettingsHeader.addEventListener("click", () => {
+            fsOverlay.style.display = "block";
+            document.body.style.overflow = "hidden"; // Scrollen im Hintergrund blockieren
+
+            const userObj = window.__SF_CURRENT_USER__ || {};
+            const plan = userObj.planType || (userObj.isPremium ? "pro" : "free");
+            const email = userObj.email || "Keine E-Mail vorhanden";
+
+            // E-Mail eintragen
+            if (fsCurrentEmail) fsCurrentEmail.textContent = email;
+
+            // Plan-Details setzen
+            if (fsPlanBadge) {
+              fsPlanBadge.textContent = plan;
+              fsPlanBadge.className = "plan-badge " + plan;
+            }
+
+            if (fsPlanPrice) {
+              if (plan === "free") fsPlanPrice.textContent = "0 € / Monat";
+              else if (plan === "pro") fsPlanPrice.textContent = "25 € / Monat";
+              else if (plan === "unlimited") fsPlanPrice.textContent = "100 € / Monat";
+              else fsPlanPrice.textContent = "Admin Zugang";
+            }
+
+            // Abo verwalten Button (Magic Link)
+            // Nutze billingUrl, WENN vorhanden, sonst den Fallback
+            const fallbackBillingUrl = "https://scholz-friese-chatbot.lemonsqueezy.com/billing";
+            const finalBillingUrl = userObj.billingUrl ? userObj.billingUrl : fallbackBillingUrl;
+
+            if (fsBtnManageBilling) {
+              if (plan === "admin") {
+                fsBtnManageBilling.style.display = "none";
+              } else {
+                fsBtnManageBilling.style.display = "inline-flex";
+                fsBtnManageBilling.setAttribute("href", finalBillingUrl);
+              }
+            }
+
+            // Kündigen-Button nutzt ebenfalls den Magic Link
+            if (fsPlanActions) {
+              const cancelHtml = `<a href="${finalBillingUrl}" target="_blank" class="btn btn-ghost" style="color: var(--text-muted); border-color: rgba(148,163,184,0.3); justify-content: center; width:fit-content; text-decoration:none;">Abo kündigen</a>`;
+
+              if (plan === "free") {
+                fsPlanActions.innerHTML = `
+                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                    <div style="border: 1px solid var(--border-subtle); border-radius: 12px; padding: 16px; background: rgba(15, 23, 42, 0.4);">
+                      <div style="font-size: 14px; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Pro Plan (25€)</div>
+                      <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Ideal um mit einem Chatbot durchzustarten.</div>
+                      <a href="${URL_BUY_PRO}?checkout[custom][user_id]=${userObj.id}" class="btn btn-primary lemonsqueezy-button" style="text-decoration: none; width: 100%; justify-content: center;">Jetzt Upgraden</a>
+                    </div>
+                    <div style="border: 1px solid var(--accent); border-radius: 12px; padding: 16px; background: rgba(56, 189, 248, 0.05);">
+                      <div style="font-size: 14px; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Unlimited Plan (100€)</div>
+                      <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Mehrere Chatbots für professionelle Ansprüche.</div>
+                      <a href="${URL_BUY_UNLIMITED}?checkout[custom][user_id]=${userObj.id}" class="btn btn-primary lemonsqueezy-button" style="text-decoration: none; width: 100%; justify-content: center;">Jetzt Upgraden</a>
+                    </div>
+                  </div>
+                `;
+              } else if (plan === "pro") {
+                fsPlanActions.innerHTML = `
+                  <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                    <a href="${URL_BUY_UNLIMITED}?checkout[custom][user_id]=${userObj.id}" class="btn btn-primary lemonsqueezy-button" style="text-decoration:none;">🚀 Upgrade auf Unlimited</a>
+                    ${cancelHtml}
+                  </div>
+                `;
+              } else if (plan === "unlimited") {
+                fsPlanActions.innerHTML = `
+                  <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                    <a href="${finalBillingUrl}" target="_blank" class="btn btn-ghost" style="text-decoration:none;">📉 Downgrade auf Pro</a>
+                    ${cancelHtml}
+                  </div>
+                `;
+              } else if (plan === "admin") {
+                fsPlanActions.innerHTML = `<div style="font-size: 13px; color: var(--text-muted);">Admins haben vollen Zugriff. Keine Aktionen nötig.</div>`;
+              }
+
+              if (window.createLemonSqueezy) window.createLemonSqueezy();
+            }
+          });
+
+          // Schließen Logik
+          closeFsSettings.addEventListener("click", () => {
+            fsOverlay.style.display = "none";
+            document.body.style.overflow = "auto";
+            if (fsPasswordStatus) fsPasswordStatus.style.display = "none";
+            if (fsPasswordForm) fsPasswordForm.reset();
+          });
+
+          document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && fsOverlay.style.display === "block") {
+              closeFsSettings.click();
+            }
+          });
+        }
+
+        // Passwort ändern Logik
+        if (fsPasswordForm) {
+          fsPasswordForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const pCurrent = document.getElementById("fsCurrentPassword").value;
+            const pNew = document.getElementById("fsNewPassword").value;
+            const pConfirm = document.getElementById("fsConfirmPassword").value;
+
+            fsPasswordStatus.style.display = "inline-block";
+
+            if (pNew !== pConfirm) {
+              fsPasswordStatus.textContent = "Die neuen Passwörter stimmen nicht überein.";
+              fsPasswordStatus.style.color = "var(--danger)";
+              return;
+            }
+
+            fsPasswordStatus.textContent = "Passwort wird aktualisiert...";
+            fsPasswordStatus.style.color = "var(--text-muted)";
+
+            try {
+              const token = localStorage.getItem("sf_auth_token");
+
+              const res = await fetch("https://autumn-flower-76fa.friese-scholz.workers.dev/auth/change-password", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": "Bearer " + token
+                },
+                body: JSON.stringify({ currentPassword: pCurrent, newPassword: pNew })
+              });
+
+              if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.error || "Fehler beim Aktualisieren des Passworts.");
+              }
+
+              fsPasswordStatus.textContent = "Passwort erfolgreich aktualisiert!";
+              fsPasswordStatus.style.color = "var(--ok)";
+              fsPasswordForm.reset();
+
+              setTimeout(() => { fsPasswordStatus.style.display = "none"; }, 3000);
+            } catch (err) {
+              fsPasswordStatus.textContent = err.message;
+              fsPasswordStatus.style.color = "var(--danger)";
+            }
+          });
+        }
+
+        // Neuer Logout Button im Panel
+        const fsBtnLogout = document.getElementById("fs-btn-logout");
+        if (fsBtnLogout) {
+          fsBtnLogout.addEventListener("click", () => {
+            localStorage.removeItem("sf_auth_token");
+            window.location.href = "/";
+          });
+        }
+      });
+
+      boot().catch((e) => {
+        console.error("boot_failed", e);
+        window.location.replace(new URL("index.html", window.location.href).toString());
+      });
+    })();
+
+  </script>
+
+
+
+  <!-- DAS POP-UP (MODAL) FÜR DAS IMPRESSUM -->
+  <div id="impressum-modal"
+    style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px);">
+    <div
+      style="background: #fff; width: 100%; max-width: 600px; border-radius: 16px; padding: 32px; max-height: 85vh; overflow-y: auto; box-shadow: 0 24px 48px rgba(0,0,0,0.2); position: relative;">
+
+      <!-- Schließen-Button -->
+      <button id="close-impressum"
+        style="position: absolute; top: 16px; right: 16px; background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 20px; cursor: pointer; color: #475569; display: flex; align-items: center; justify-content: center;">&times;</button>
+
+      <h2 style="margin-top: 0; font-size: 24px; margin-bottom: 24px; color: #0f172a;">Impressum</h2>
+
+      <div style="font-size: 14px; line-height: 1.7; color: #334155;">
+        <strong>1. Angaben gemäß § 5 DDG</strong><br>
+        <strong>Friese &amp; Scholz GbR</strong><br>
+        (Geschäftsbezeichnung: Scholz &amp; Friese Webdesign)<br>
+        Erichshagener Lendenberg 21<br>
+        31582 Nienburg (Weser)<br>
+        Deutschland<br><br>
+
+        <strong>2. Vertreten durch die Gesellschafter</strong><br>
+        Adrian Friese<br>
+        Bastian Scholz<br><br>
+
+        <strong>3. Kontakt</strong><br>
+        Telefon: <a href="tel:+4915563436782" style="color: inherit; text-decoration: underline;">+49 155 63436782</a><br>
+        E-Mail: <a href="mailto:info@scholz-friese-webdesign.de"
+          style="color: var(--accent); text-decoration: none;">info@scholz-friese-webdesign.de</a><br><br>
+
+        <strong>4. Umsatzsteuer-ID</strong><br>
+        Umsatzsteuer-Identifikationsnummer gemäß § 27 a Umsatzsteuergesetz:<br>
+        <strong>DE362626040</strong><br><br>
+
+        <strong>5. Redaktionell verantwortlich gemäß § 18 Abs. 2 MStV</strong><br>
+        Adrian Friese &amp; Bastian Scholz<br>
+        Erichshagener Lendenberg 21<br>
+        31582 Nienburg (Weser)<br><br>
+
+        <strong>6. Social-Media-Präsenzen</strong><br>
+        Dieses Impressum gilt auch für folgende Social-Media-Profile und Online-Präsenzen:<br>
+        • Instagram: <a href="https://www.instagram.com/scholz_friese_webdesign/?hl=en" target="_blank" rel="noopener" style="color: var(--accent); text-decoration: none;">@scholz_friese_webdesign</a><br>
+        • TikTok: <a href="https://www.tiktok.com/@scholzfriesewebdesign" target="_blank" rel="noopener" style="color: var(--accent); text-decoration: none;">@scholzfriesewebdesign</a><br>
+        • YouTube: <a href="https://www.youtube.com/@ScholzFrieseWebdesign" target="_blank" rel="noopener" style="color: var(--accent); text-decoration: none;">@ScholzFrieseWebdesign</a><br><br>
+
+        <strong>7. EU-Streitschlichtung</strong><br>
+        Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit:<br>
+        <a href="https://ec.europa.eu/consumers/odr/" target="_blank"
+          style="color: var(--accent); text-decoration: none;">https://ec.europa.eu/consumers/odr/</a>.<br>
+        Unsere E-Mail-Adresse finden Sie oben im Impressum.<br><br>
+
+        <strong>8. Verbraucherstreitbeilegung / Universalschlichtungsstelle</strong><br>
+        Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle
+        teilzunehmen.
+      </div>
+    </div>
+  </div>
+
+  <!-- DAS POP-UP (MODAL) FÜR DEN DATENSCHUTZ -->
+  <div id="datenschutz-modal"
+    style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px);">
+    <div
+      style="background: #fff; width: 100%; max-width: 800px; border-radius: 16px; padding: 32px; max-height: 85vh; overflow-y: auto; box-shadow: 0 24px 48px rgba(0,0,0,0.2); position: relative;">
+
+      <button id="close-datenschutz"
+        style="position: absolute; top: 16px; right: 16px; background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 20px; cursor: pointer; color: #475569; display: flex; align-items: center; justify-content: center;">&times;</button>
+
+      <h2 style="margin-top: 0; font-size: 24px; margin-bottom: 24px; color: #0f172a;">Datenschutzerklärung</h2>
+
+      <div style="font-size: 14px; line-height: 1.6; color: #334155;">
+        <strong>1. Datenschutz auf einen Blick</strong><br>
+        Wir nehmen den Schutz Ihrer persönlichen Daten sehr ernst. Wir behandeln Ihre personenbezogenen Daten
+        vertraulich und entsprechend der gesetzlichen Datenschutzvorschriften sowie dieser Datenschutzerklärung.<br><br>
+
+        <strong>2. Verantwortlicher</strong><br>
+        Friese Scholz GbR<br>
+        Erichshagener Lendenberg 21, 31582 Nienburg<br>
+        Telefon: +49 155 63436782<br>
+        E-Mail: info@scholz-friese-webdesign.de<br><br>
+
+        <strong>3. Datenerfassung auf dieser Website (Hosting & Logfiles)</strong><br>
+        Unsere Website und die Backend-Infrastruktur (Datenbanken, Dateispeicher) werden über die Server von
+        <strong>Cloudflare, Inc.</strong> (USA) bereitgestellt. Cloudflare erhebt automatisch Server-Logfiles (z.B.
+        IP-Adresse, Browser, Zeitpunkt), die für den sicheren Betrieb des Dienstes technisch erforderlich sind (Art. 6
+        Abs. 1 lit. f DSGVO). Wir haben einen Auftragsverarbeitungsvertrag (AVV) mit Cloudflare geschlossen.<br><br>
+
+        <strong>4. Registrierung und Nutzerkonto</strong><br>
+        Wenn Sie sich in unserem Dashboard registrieren, speichern wir Ihre E-Mail-Adresse sowie ein kryptografisch
+        verschlüsseltes Passwort. Diese Daten dienen ausschließlich der Bereitstellung unseres SaaS-Dienstes (Art. 6
+        Abs. 1 lit. b DSGVO). Zur Authentifizierung nutzen wir lokale Speichermedien (Local Storage/JWT), anstelle von
+        herkömmlichen Cookies.<br><br>
+
+        <strong>5. Zahlungsabwicklung (Lemon Squeezy)</strong><br>
+        Für kostenpflichtige Premium-Abos nutzen wir den Zahlungsdienstleister <strong>Lemon Squeezy</strong>. Lemon
+        Squeezy agiert als "Merchant of Record". Wenn Sie ein Abo abschließen, werden Ihre Zahlungsdaten (z.B. Name,
+        E-Mail, Kreditkarte) direkt an Lemon Squeezy übermittelt und dort verarbeitet. Grundlage hierfür ist die
+        Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO).<br><br>
+
+        <strong>6. Bereitstellung des KI-Chatbots</strong><br>
+        Unser Dienst ermöglicht es Ihnen, KI-Chatbots für Ihre Website zu generieren.<br>
+        - <strong>KI-Verarbeitung:</strong> Die Eingaben in den Chatbot werden zur Textgenerierung an sichere
+        Schnittstellen von KI-Anbietern (z.B. Google) übertragen. Wir nutzen die Daten nicht zum Training eigener
+        Modelle.<br>
+        - <strong>Kontaktformulare/E-Mails:</strong> Wenn Nutzer über den Chatbot Kontaktdaten hinterlassen, werden
+        diese per E-Mail an Sie weitergeleitet. Hierfür nutzen wir den Dienstleister <strong>Resend</strong>.<br><br>
+
+        <strong>7. Webanalyse und Tracking</strong><br>
+        Unser Chatbot-Widget erfasst anonymisierte Nutzungsstatistiken (z.B. Seitenaufrufe, Klicks), um Ihnen im
+        Dashboard Statistiken bereitzustellen. Hierbei werden keine IP-Adressen dauerhaft gespeichert und keine
+        seitenübergreifenden Tracking-Cookies gesetzt.<br><br>
+
+        <strong>8. Ihre Rechte</strong><br>
+        Sie haben jederzeit das Recht auf unentgeltliche Auskunft über Herkunft, Empfänger und Zweck Ihrer gespeicherten
+        personenbezogenen Daten. Sie haben außerdem ein Recht, die Berichtigung, Sperrung oder Löschung dieser Daten zu
+        verlangen. Wenden Sie sich hierzu jederzeit an die oben angegebene E-Mail-Adresse.
+      </div>
+    </div>
+  </div>
+  <!-- DAS POP-UP (MODAL) FÜR DIE AGB -->
+  <div id="agb-modal"
+    style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px);">
+    <div
+      style="background: #fff; width: 100%; max-width: 800px; border-radius: 16px; padding: 32px; max-height: 85vh; overflow-y: auto; box-shadow: 0 24px 48px rgba(0,0,0,0.2); position: relative;">
+
+      <button id="close-agb"
+        style="position: absolute; top: 16px; right: 16px; background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 20px; cursor: pointer; color: #475569; display: flex; align-items: center; justify-content: center;">&times;</button>
+
+      <h2 style="margin-top: 0; font-size: 24px; margin-bottom: 24px; color: #0f172a;">Allgemeine Nutzungsbedingungen
+        (AGB)</h2>
+
+      <div style="font-size: 14px; line-height: 1.6; color: #334155;">
+        <strong>1. Geltungsbereich und Vertragspartner</strong><br>
+        Diese Nutzungsbedingungen gelten für die Nutzung der SaaS-Software "Chatbot & SEO Dashboard", bereitgestellt
+        durch die Friese Scholz GbR (nachfolgend "Anbieter").<br>
+        <strong>Wichtiger Hinweis zum Kaufvertrag:</strong> Kostenpflichtige Abonnements werden über unseren
+        autorisierten Reseller "Lemon Squeezy" (Merchant of Record) abgewickelt. Es gelten für den Zahlungsverkehr,
+        Widerruf und die Rechnungsstellung die Verkaufsbedingungen von Lemon Squeezy.<br><br>
+
+        <strong>2. Leistungen und Verfügbarkeit</strong><br>
+        Der Anbieter stellt eine Plattform zur Erstellung von KI-Chatbots und SEO-Analysen zur Verfügung. Die Software
+        wird "as is" bereitgestellt. Der Anbieter bemüht sich um eine höchstmögliche Verfügbarkeit der Server,
+        garantiert jedoch keine 100%ige Ausfallsicherheit. Wartungsarbeiten oder technische Störungen können zu
+        vorübergehenden Einschränkungen führen.<br><br>
+
+        <strong>3. Nutzungslimits und Pläne</strong><br>
+        Die Nutzung unterliegt den Limits des jeweils gebuchten Plans (z.B. maximale Anzahl an Chatbots oder Nachrichten
+        pro Monat). Der Anbieter behält sich vor, bei systemgefährdender Überlastung (z.B. durch Bot-Angriffe oder Spam)
+        den Service für den betroffenen Account vorübergehend zu drosseln oder zu pausieren.<br><br>
+
+        <strong>4. Haftungsausschluss für KI-generierte Inhalte</strong><br>
+        Die Antworten des Chatbots werden durch künstliche Intelligenz (KI) in Echtzeit auf Basis der vom Nutzer
+        hinterlegten Unternehmensdaten generiert. Der Anbieter hat keinen Einfluss auf die exakte Formulierung der KI.
+        <br>
+        <strong>Der Nutzer erkennt ausdrücklich an, dass KI-Systeme Fehler machen oder inkorrekte Informationen
+          ("Halluzinationen") ausgeben können.</strong> Der Nutzer ist allein dafür verantwortlich, den Output des
+        Chatbots auf seiner Website zu überwachen. Der Anbieter haftet nicht für direkte oder indirekte Schäden,
+        rechtliche Konsequenzen oder entgangene Gewinne, die durch fehlerhafte Chatbot-Antworten gegenüber dem Nutzer
+        oder dessen Endkunden entstehen.<br><br>
+
+        <strong>5. Pflichten des Nutzers</strong><br>
+        Der Nutzer verpflichtet sich, die Software nicht missbräuchlich oder für rechtswidrige Zwecke einzusetzen. Es
+        ist untersagt, den Chatbot für die Verbreitung von Spam, Schadcode, diskriminierenden oder strafrechtlich
+        relevanten Inhalten zu nutzen. Bei Verstößen behält sich der Anbieter das Recht vor, den Account fristlos zu
+        sperren.<br><br>
+
+        <strong>6. Haftungsbeschränkung des Anbieters</strong><br>
+        Der Anbieter haftet unbeschränkt für Vorsatz und grobe Fahrlässigkeit. Für leichte Fahrlässigkeit haftet der
+        Anbieter nur bei Verletzung wesentlicher Vertragspflichten (Kardinalpflichten), deren Erfüllung die
+        ordnungsgemäße Durchführung des Vertrages überhaupt erst ermöglicht. In diesem Fall ist die Haftung auf den
+        vertragstypischen, vorhersehbaren Schaden begrenzt.<br><br>
+
+        <strong>7. Kündigung</strong><br>
+        Abonnements können jederzeit über das integrierte Kundenportal (betrieben durch Lemon Squeezy) gekündigt werden.
+        Die Nutzung der Premium-Funktionen bleibt dann bis zum Ende der bereits bezahlten Laufzeit erhalten.
+      </div>
+    </div>
+  </div>
+
+  <!-- FULLSCREEN EINSTELLUNGEN OVERLAY -->
+  <div id="fullscreen-settings-overlay"
+    style="display: none; position: fixed; inset: 0; background: var(--bg); z-index: 10000; overflow-y: auto;">
+    <div style="max-width: 760px; margin: 0 auto; padding: 40px 20px; position: relative;">
+
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 40px;">
+        <h2 style="margin: 0; font-size: 28px; font-weight: 700; color: var(--text-main);">Einstellungen</h2>
+        <button id="close-fs-settings"
+          style="background: rgba(148, 163, 184, 0.1); border: 1px solid var(--border-subtle); width: 40px; height: 40px; border-radius: 50%; font-size: 24px; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; transition: all 0.2s;">&times;</button>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 40px;">
+
+        <section>
+          <h3
+            style="font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 16px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">
+            A. Mein Profil & Sicherheit</h3>
+
+          <div
+            style="background: var(--card-bg); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 24px;">
+
+            <div>
+              <h4 style="margin: 0 0 8px 0; font-size: 15px; color: var(--text-main);">E-Mail Adresse</h4>
+              <p style="font-size: 13px; color: var(--text-muted); margin: 0;">Deine E-Mail-Adresse dient als Login und
+                kann aus Sicherheitsgründen nicht geändert werden.</p>
+              <div
+                style="margin-top: 12px; display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-subtle); border-radius: 8px; font-size: 14px; color: var(--text-main); font-weight: 500;">
+                <span style="opacity: 0.5;">✉️</span> <span id="settings-current-email">Lade...</span>
+              </div>
+            </div>
+
+            <div style="height: 1px; background: var(--border-subtle); width: 100%;"></div>
+
+            <div>
+              <h4 style="margin: 0 0 16px 0; font-size: 15px; color: var(--text-main);">Passwort ändern</h4>
+              <form id="fs-password-form" style="display: flex; flex-direction: column; gap: 16px;">
+                <div class="field" style="max-width: 320px;">
+                  <label for="fsCurrentPassword">Aktuelles Passwort</label>
+                  <input type="password" id="fsCurrentPassword" required placeholder="••••••••"
+                    style="width: 100%; border-radius: 8px; border: 1px solid var(--border-subtle); background: rgba(15, 23, 42, 0.6); padding: 10px; color: var(--text-main); font-size: 13px; outline: none;">
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+                  <div class="field">
+                    <label for="fsNewPassword">Neues Passwort</label>
+                    <input type="password" id="fsNewPassword" required placeholder="••••••••"
+                      style="width: 100%; border-radius: 8px; border: 1px solid var(--border-subtle); background: rgba(15, 23, 42, 0.6); padding: 10px; color: var(--text-main); font-size: 13px; outline: none;">
+                  </div>
+                  <div class="field">
+                    <label for="fsConfirmPassword">Neues Passwort bestätigen</label>
+                    <input type="password" id="fsConfirmPassword" required placeholder="••••••••"
+                      style="width: 100%; border-radius: 8px; border: 1px solid var(--border-subtle); background: rgba(15, 23, 42, 0.6); padding: 10px; color: var(--text-main); font-size: 13px; outline: none;">
+                  </div>
+                </div>
+                <div style="display:flex; gap: 12px; align-items: center; margin-top: 4px;">
+                  <button type="submit" class="btn btn-primary"
+                    style="font-weight: 500; font-size: 13px; padding: 8px 16px;">Passwort aktualisieren</button>
+                  <span id="fs-password-status" style="font-size: 12px; display: none;"></span>
+                </div>
+              </form>
+            </div>
+
+          </div>
+        </section>
+
+        <section>
+          <h3
+            style="font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 16px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">
+            B. Abo & Abrechnung</h3>
+
+          <div
+            style="background: var(--card-bg); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 20px;">
+
+            <div
+              style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+              <div>
+                <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 6px;">Aktueller Plan</div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span id="fs-plan-badge" class="plan-badge free"
+                    style="font-size: 14px; padding: 6px 14px; margin: 0;">Free</span>
+                  <span id="fs-plan-price" style="font-size: 14px; font-weight: 600; color: var(--text-main);">0 € /
+                    Monat</span>
+                </div>
+              </div>
+              <a id="fs-btn-manage-billing" href="#" target="_blank" class="btn btn-ghost"
+                style="padding: 10px 16px; text-decoration: none;">💳 Zahlungsmethode & Rechnungen</a>
+            </div>
+
+            <div style="height: 1px; background: var(--border-subtle); width: 100%;"></div>
+
+            <div id="fs-plan-actions" style="display: flex; flex-direction: column; gap: 16px;">
+            </div>
+
+          </div>
+        </section>
+
+        <section>
+          <h3
+            style="font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 16px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">
+            C. Weitere Aktionen</h3>
+
+          <div
+            style="background: var(--card-bg); border: 1px solid rgba(249, 115, 115, 0.2); border-radius: 12px; padding: 24px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+            <div>
+              <h4 style="margin: 0 0 4px 0; font-size: 15px; color: var(--text-main);">Abmelden</h4>
+              <p style="font-size: 13px; color: var(--text-muted); margin: 0;">Melde dich sicher von deinem Account ab.
+              </p>
+            </div>
+            <button id="fs-btn-logout" class="btn btn-danger-ghost" style="padding: 10px 20px; font-weight: 500;">Sicher
+              abmelden</button>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

@@ -1,0 +1,44 @@
+{
+  "name": "autumn-flower-76fa",
+  "main": "worker.js",
+  "compatibility_date": "2026-07-08",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "ai": {
+    "binding": "AI"
+  },
+  "d1_databases": [
+    {
+      "binding": "ANALYTICS_DB",
+      "database_name": "analytics_db",
+      "database_id": "d5516d95-288a-4472-ac4c-23d0498fb569"
+    },
+    {
+      "binding": "AUTH_DB",
+      "database_name": "auth_db",
+      "database_id": "7a20d327-39db-46a6-bd14-f98c41d1f7fa"
+    },
+    {
+      "binding": "DB",
+      "database_name": "db",
+      "database_id": "f75a11ad-e2c9-4324-8232-97ad72426ada"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "CHATBOT_R2",
+      "bucket_name": "chatbotr2"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "CHAT_KV",
+      "id": "8afea7e62a5342208b73a2181cfaa156"
+    },
+    {
+      "binding": "TENANT_KV",
+      "id": "4dd2a3ecbbf747f0be2a861664268147"
+    }
+  ]
+}
